@@ -1,6 +1,6 @@
 name: scaibu_mutex_lock
 description: A Dart package providing advanced mutex locking mechanisms.
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/Chief-Strategist-J/scaibu_mutex_lock
 repository: https://github.com/Chief-Strategist-J/scaibu_mutex_lock
 issue_tracker: https://github.com/Chief-Strategist-J/scaibu_mutex_lock/issues
