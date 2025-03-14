@@ -1,9 +1,9 @@
 name: scaibu_mutex_lock
-description: "mutex_lock is a lightweight and efficient Dart package for mutual exclusion (mutex) locks, ensuring thread-safe access to shared resources in asynchronous environments."
-version: 0.0.1
-homepage: https://github.com/yourusername/scaibu_mutex_lock
-repository: https://github.com/yourusername/scaibu_mutex_lock
-issue_tracker: https://github.com/yourusername/scaibu_mutex_lock/issues
+description: A Dart package providing advanced mutex locking mechanisms.
+version: 1.0.0
+homepage: https://github.com/Chief-Strategist-J/scaibu_mutex_lock
+repository: https://github.com/Chief-Strategist-J/scaibu_mutex_lock
+issue_tracker: https://github.com/Chief-Strategist-J/scaibu_mutex_lock/issues
 environment:
   sdk: ^3.7.2
   flutter: ">=1.17.0"
