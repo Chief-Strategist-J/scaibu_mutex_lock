@@ -1,6 +1,4 @@
-part of scaibu_mutex_lock;
-
-
+part of '../../../scaibu_mutex_lock.dart';
 
 /// Primary interface for all mutex (mutual exclusion) operations.
 ///
@@ -224,11 +222,11 @@ class MutexPool implements IMutexPool {
   }
 
   /// Interval at which expired mutexes are cleaned up.
-  static const Duration _CLEANUP_INTERVAL = Duration(minutes: 5);
+  static const Duration _cleanupInterval = Duration(minutes: 5);
 
   /// Time duration after which an unused mutex is considered expired and
   /// removed.
-  static const Duration _MUTEX_EXPIRATION = Duration(minutes: 30);
+  static const Duration _mutexExpiration = Duration(minutes: 30);
 
   /// Internal map storing mutex instances along with their last access time.
   final Map<String, PoolEntry> _pool = <String, PoolEntry>{};
@@ -244,13 +242,13 @@ class MutexPool implements IMutexPool {
   /// Ensures that expired mutexes are removed at regular intervals.
   void _startCleanupTimer() {
     _cleanupTimer?.cancel();
-    _cleanupTimer = Timer.periodic(_CLEANUP_INTERVAL, (final _) => _cleanup());
+    _cleanupTimer = Timer.periodic(_cleanupInterval, (final _) => _cleanup());
   }
 
   /// Removes expired mutexes from the pool.
   ///
   /// A mutex is considered expired if it is currently unused and
-  /// has not been accessed for longer than [_MUTEX_EXPIRATION].
+  /// has not been accessed for longer than [_mutexExpiration].
   void _cleanup() {
     final DateTime now = DateTime.now();
     final List<String> keysToRemove =
@@ -258,8 +256,7 @@ class MutexPool implements IMutexPool {
             .where(
               (final MapEntry<String, PoolEntry> entry) =>
                   entry.value.mutex.isUnused &&
-                  now.difference(entry.value.lastAccessTime) >
-                      _MUTEX_EXPIRATION,
+                  now.difference(entry.value.lastAccessTime) > _mutexExpiration,
             )
             .map((final MapEntry<String, PoolEntry> entry) => entry.key)
             .toList();
@@ -305,7 +302,7 @@ class UltraMutex implements IMutex {
   UltraMutex(this.name, this._metrics);
 
   // Static constants to avoid redundant allocations.
-  static final Future<void> _COMPLETED_FUTURE = Future<void>.value();
+  static final Future<void> _completedFuture = Future<void>.value();
 
   @override
   /// Unique name for this mutex instance.
@@ -340,7 +337,7 @@ class UltraMutex implements IMutex {
       _activeOperations == 0 &&
       !_locked &&
       _waiters.isEmpty &&
-      DateTime.now().difference(_lastUnlockTime) > Duration(minutes: 10);
+      DateTime.now().difference(_lastUnlockTime) > const Duration(minutes: 10);
 
   @override
   /// Protects a critical section with automatic lock handling.
@@ -372,7 +369,7 @@ class UltraMutex implements IMutex {
     // Fast path if mutex is currently available.
     if (!_locked) {
       _locked = true;
-      return _COMPLETED_FUTURE;
+      return _completedFuture;
     }
 
     // Contention path: queue the requester.

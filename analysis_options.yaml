@@ -1,3 +1,5 @@
+include: package:lints/core.yaml
+
 analyzer:
   exclude:
     # Generated files
@@ -54,7 +56,10 @@ analyzer:
     library_private_types_in_public_api: error
     invalid_dependency: error
     missing_dependency: error
-
+    use_string_in_part_of_directives: error
+    constant_identifier_names : error
+    non_constant_identifier_names : error
+    prefer_const_constructors : error
     # Critical Errors
     todo: error
     dead_code: error

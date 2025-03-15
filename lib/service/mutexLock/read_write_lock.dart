@@ -1,4 +1,4 @@
-part of scaibu_mutex_lock;
+part of '../../scaibu_mutex_lock.dart';
 
 /// A Read-Write Lock implementation that allows multiple readers but only
 /// one writer.

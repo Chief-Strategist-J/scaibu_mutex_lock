@@ -1,4 +1,4 @@
-part of scaibu_mutex_lock;
+part of '../../scaibu_mutex_lock.dart';
 
 
 /// A class that manages multiple mutex locks in a structured manner.

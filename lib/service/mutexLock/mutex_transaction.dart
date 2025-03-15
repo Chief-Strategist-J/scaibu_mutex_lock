@@ -1,4 +1,4 @@
-part of scaibu_mutex_lock;
+part of '../../scaibu_mutex_lock.dart';
 
 ///
 /// A class that manages a transaction involving multiple mutexes, ensuring

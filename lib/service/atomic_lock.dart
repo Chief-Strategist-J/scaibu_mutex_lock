@@ -1,4 +1,4 @@
-part of scaibu_mutex_lock;
+part of '../scaibu_mutex_lock.dart';
 
 /// A high-performance, optimized atomic lock implementation for Dart.
 ///

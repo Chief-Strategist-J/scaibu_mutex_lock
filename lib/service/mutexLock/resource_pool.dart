@@ -1,4 +1,4 @@
-part of scaibu_mutex_lock;
+part of '../../scaibu_mutex_lock.dart';
 
 
 /// A generic resource pool that manages a set of reusable resources.

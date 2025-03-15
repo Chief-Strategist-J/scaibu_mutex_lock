@@ -1,4 +1,4 @@
-part of scaibu_mutex_lock;
+part of '../../scaibu_mutex_lock.dart';
 
 /// Represents a task waiting to acquire the lock.
 class _PriorityWaiter {

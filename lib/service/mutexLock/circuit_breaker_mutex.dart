@@ -1,4 +1,4 @@
-part of scaibu_mutex_lock;
+part of '../../scaibu_mutex_lock.dart';
 
 /// A `CircuitBreaker` implementation to prevent cascading failures
 /// in distributed systems by limiting the number of failed operations.
