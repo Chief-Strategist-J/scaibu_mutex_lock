@@ -1,10 +1,10 @@
 name: scaibu_mutex_lock
 description: >
-  A Dart package providing advanced mutex locking mechanisms to ensure safe 
-  and efficient synchronization in concurrent environments. Supports atomic 
-  operations, deadlock prevention, and lightweight resource locking for 
-  Flutter and Dart applications.
-version: 1.0.2
+  A Dart package for mutex locking, ensuring safe and efficient 
+  synchronization. Supports atomic ops, deadlock prevention, and 
+  lightweight resource locking.
+
+version: 1.0.3
 homepage: https://github.com/Chief-Strategist-J/scaibu_mutex_lock
 repository: https://github.com/Chief-Strategist-J/scaibu_mutex_lock
 issue_tracker: https://github.com/Chief-Strategist-J/scaibu_mutex_lock/issues
