@@ -13,8 +13,8 @@ class ReadWriteLock {
   ///
   /// [name] is used to generate unique mutex identifiers.
   ReadWriteLock(final String name)
-      : _writeMutex = MutexService().getMutex('$name-write'),
-        _readersMutex = MutexService().getMutex('$name-readers-count');
+    : _writeMutex = MutexService().getMutex('$name-write'),
+      _readersMutex = MutexService().getMutex('$name-readers-count');
 
   /// Mutex for write operations, ensuring only one writer at a time.
   final IMutex _writeMutex;

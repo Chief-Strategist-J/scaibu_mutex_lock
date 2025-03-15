@@ -1,6 +1,5 @@
 part of '../../scaibu_mutex_lock.dart';
 
-
 /// A generic resource pool that manages a set of reusable resources.
 /// This ensures controlled access to a limited number of resources
 /// using a mutual exclusion (mutex) mechanism.
@@ -9,7 +8,7 @@ class ResourcePool<T> {
   ///
   /// [poolName] is used to create a unique mutex for synchronization.
   ResourcePool(this._resources, final String poolName)
-      : _mutex = MutexService().getMutex('resource-pool-$poolName') {
+    : _mutex = MutexService().getMutex('resource-pool-$poolName') {
     _available.addAll(_resources);
   }
 
@@ -29,17 +28,18 @@ class ResourcePool<T> {
   ///
   /// If no resource is available, this method waits until one is released.
   Future<T> acquire() async => _mutex.protect(() async {
-        if (_available.isEmpty) {
-          // Wait for a resource to be released
-          final Completer<void> completer = Completer<void>();
-          final T resource = _resources
-              .firstWhere((final T r) => !_releaseCompleters.containsKey(r));
-          _releaseCompleters[resource] = completer;
-          await completer.future;
-        }
+    if (_available.isEmpty) {
+      // Wait for a resource to be released
+      final Completer<void> completer = Completer<void>();
+      final T resource = _resources.firstWhere(
+        (final T r) => !_releaseCompleters.containsKey(r),
+      );
+      _releaseCompleters[resource] = completer;
+      await completer.future;
+    }
 
-        return _available.removeFirst();
-      });
+    return _available.removeFirst();
+  });
 
   /// Releases a previously acquired resource back into the pool.
   ///

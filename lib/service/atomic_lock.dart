@@ -18,24 +18,19 @@ class AtomicLock {
     final int spinCount = 100,
     final bool backoffEnabled = true,
     final int backoffAttempts = 4,
-  })  : _fairnessEnabled = fairnessEnabled,
-        _spinEnabled = spinEnabled,
-        _spinCount = spinCount,
-        _backoffEnabled = backoffEnabled,
-        _backoffAttempts = backoffAttempts;
+  }) : _fairnessEnabled = fairnessEnabled,
+       _spinEnabled = spinEnabled,
+       _spinCount = spinCount,
+       _backoffEnabled = backoffEnabled,
+       _backoffAttempts = backoffAttempts;
 
   /// Factory constructor optimized for low-latency scenarios.
-  factory AtomicLock.lowLatency() => AtomicLock(
-        spinCount: 200,
-        backoffAttempts: 3,
-      );
+  factory AtomicLock.lowLatency() =>
+      AtomicLock(spinCount: 200, backoffAttempts: 3);
 
   /// Factory constructor optimized for high-throughput scenarios.
-  factory AtomicLock.highThroughput() => AtomicLock(
-        fairnessEnabled: false,
-        spinCount: 500,
-        backoffAttempts: 6,
-      );
+  factory AtomicLock.highThroughput() =>
+      AtomicLock(fairnessEnabled: false, spinCount: 500, backoffAttempts: 6);
 
   // Internal lock state
   bool _locked = false;
@@ -43,9 +38,9 @@ class AtomicLock {
   // Wait queues for managing contention, split into two priority levels.
   final List<Queue<Completer<void>>> _waitQueues =
       List<Queue<Completer<void>>>.generate(
-    2,
-    (final _) => Queue<Completer<void>>(),
-  );
+        2,
+        (final _) => Queue<Completer<void>>(),
+      );
   int _currentQueueIndex = 0;
 
   // Configuration parameters
@@ -220,10 +215,10 @@ class AtomicLock {
 
   /// Retrieves performance metrics for debugging and monitoring.
   Map<String, dynamic> get metrics => <String, dynamic>{
-        'acquisitions': _acquisitions,
-        'contentions': _contentions,
-        'uptime': _uptime.elapsed.inMilliseconds,
-      };
+    'acquisitions': _acquisitions,
+    'contentions': _contentions,
+    'uptime': _uptime.elapsed.inMilliseconds,
+  };
 
   /// Disposes resources, clearing all wait queues.
   void dispose() {

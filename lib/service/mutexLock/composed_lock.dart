@@ -1,6 +1,5 @@
 part of '../../scaibu_mutex_lock.dart';
 
-
 /// A class that manages multiple mutex locks in a structured manner.
 /// It provides mechanisms for acquiring locks sequentially or atomically
 /// and ensures proper release of acquired locks.
