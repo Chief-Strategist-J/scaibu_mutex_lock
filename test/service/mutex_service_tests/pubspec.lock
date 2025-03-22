@@ -233,11 +233,10 @@ packages:
   scaibu_mutex_lock:
     dependency: "direct main"
     description:
-      name: scaibu_mutex_lock
-      sha256: "3104a92cdb9c5f892314d8b702068c26fcf1d1c8dfd27bd07e93b0dcf306b196"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.4"
+      path: "../../.."
+      relative: true
+    source: path
+    version: "1.0.5"
   shelf:
     dependency: transitive
     description:
