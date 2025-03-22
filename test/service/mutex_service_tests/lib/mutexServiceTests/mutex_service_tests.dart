@@ -165,11 +165,11 @@ void mutexServiceTest() {
       mutex.unlock();
 
       await Future.wait(
-        List<dynamic>.generate(100, (_) async {
+        List<Future<void>>.generate(100, (_) async {
               await mutex.lock();
               mutex.unlock();
-            })
-            as Iterable<Future<dynamic>>,
+            }) as Iterable<Future<void>>
+            ,
       );
 
       final Map<String, dynamic> metrics = mutexService.getMetrics();
