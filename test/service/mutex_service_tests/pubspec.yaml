@@ -1,4 +1,4 @@
-name: mutex_service_test
+name: mutexServiceTests
 description: A sample command-line application.
 version: 1.0.0
 # repository: https://github.com/my_org/my_repo
@@ -8,9 +8,12 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
-  scaibu_mutex_lock: ^1.0.4
+  scaibu_mutex_lock:
+    path: ../../../
+
 
 dev_dependencies:
   lints: ^5.0.0
   test: ^1.25.15
+
 

@@ -112,14 +112,14 @@ class MutexService {
   /// Private constructor for singleton implementation.
   ///
   /// Initializes the metrics collector and the mutex pool.
-  MutexService._internal()
-    : _metrics = MetricsCollector(),
-      _mutexPool = MutexPool(MetricsCollector());
+  MutexService._internal() : _metrics = MetricsCollector() {
+    _mutexPool = MutexPool(_metrics);
+  }
 
   // Singleton implementation
   static final MutexService _instance = MutexService._internal();
 
-  final IMutexPool _mutexPool;
+  late final IMutexPool _mutexPool;
   final IMetricsCollector _metrics;
 
   // Public API
