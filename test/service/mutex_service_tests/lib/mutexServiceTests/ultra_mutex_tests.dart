@@ -1,11 +1,15 @@
-import 'package:mutex_service_test/tests.dart';
+import 'dart:async';
 
+import 'package:scaibu_mutex_lock/scaibu_mutex_lock.dart';
+import 'package:test/test.dart';
+
+/// ultra mutex Tests
 void ultraMutexTests() {
   group('UltraMutex', () {
     late IMutex mutex;
 
     setUp(() {
-      final service = MutexService();
+      final MutexService service = MutexService();
       mutex = service.getMutex('test_mutex');
       service.resetMetrics();
     });
@@ -25,17 +29,20 @@ void ultraMutexTests() {
 
     test('should report correct metrics when locking and unlocking', () async {
       // Create a dedicated metrics collector for this test
-      final testMetrics = MetricsCollector();
+      final MetricsCollector testMetrics = MetricsCollector();
 
       // Create a mutex using this specific metrics collector
-      final testMutex = UltraMutex('metrics_test_mutex', testMetrics);
+      final UltraMutex testMutex = UltraMutex(
+        'metrics_test_mutex',
+        testMetrics,
+      );
 
       // Perform operations on this mutex
       await testMutex.lock();
       testMutex.unlock();
 
       // Verify metrics directly from our collector
-      final snapshot = testMetrics.snapshot();
+      final Map<String, dynamic> snapshot = testMetrics.snapshot();
       expect(snapshot['totalLocks'], 1);
       expect(snapshot['totalUnlocks'], 1);
     });
@@ -44,15 +51,15 @@ void ultraMutexTests() {
       await mutex.lock();
 
       // Start another lock request (will be queued)
-      final lockFuture = mutex.lock();
+      final Future<void> lockFuture = mutex.lock();
 
       // Unlock to allow the queued request to proceed
       mutex.unlock();
       await lockFuture;
       mutex.unlock();
 
-      final service = MutexService();
-      final snapshot = service.getMetrics();
+      final MutexService service = MutexService();
+      final Map<String, dynamic> snapshot = service.getMetrics();
       expect(snapshot['totalLocks'], 2);
       expect(snapshot['totalUnlocks'], 2);
       expect(snapshot['contentionCount'], 1);
@@ -67,7 +74,9 @@ void ultraMutexTests() {
     test(
       'lockWithTimeout should return true when lock acquired within timeout',
       () async {
-        final result = await mutex.lockWithTimeout(Duration(seconds: 1));
+        final bool result = await mutex.lockWithTimeout(
+          const Duration(seconds: 1),
+        );
         expect(result, true);
         mutex.unlock();
       },
@@ -77,13 +86,15 @@ void ultraMutexTests() {
       await mutex.lock();
 
       // Start a timed lock attempt that should time out
-      final result = await mutex.lockWithTimeout(Duration(milliseconds: 50));
+      final bool result = await mutex.lockWithTimeout(
+        const Duration(milliseconds: 50),
+      );
       expect(result, false);
 
       mutex.unlock();
 
-      final service = MutexService();
-      final snapshot = service.getMetrics();
+      final MutexService service = MutexService();
+      final Map<String, dynamic> snapshot = service.getMetrics();
       expect(snapshot['timeoutCount'], 1);
     });
 
@@ -120,7 +131,7 @@ void ultraMutexTests() {
       'UltraMutex should handle lock contention from multiple async calls',
       () async {
         // Set up execution order tracking
-        final List<String> executionOrder = [];
+        final List<String> executionOrder = <String>[];
 
         // First lock the mutex
         await mutex.lock();
@@ -154,11 +165,12 @@ void ultraMutexTests() {
         mutex.unlock();
 
         // Wait for all tasks to complete
-        await Future.wait([task1, task2, task3]);
+        await Future.wait(<Future<void>>[task1, task2, task3]);
 
         // Verify execution happened in sequence (not in parallel)
-        // We expect the exact order based on queue position, not by completion time
-        expect(executionOrder, [
+        // We expect the exact order based on queue position, not by completion
+        // time
+        expect(executionOrder, <String>[
           'task1-start',
           'task1-end',
           'task2-start',
@@ -168,7 +180,7 @@ void ultraMutexTests() {
         ]);
 
         // Verify metrics
-        final metricsSnapshot = metrics.snapshot();
+        final Map<String, dynamic> metricsSnapshot = metrics.snapshot();
         expect(
           metricsSnapshot['totalLocks'],
           equals(4),
@@ -191,7 +203,7 @@ void ultraMutexTests() {
         expect(acquired, isFalse);
 
         // Check metrics
-        final snapshot = metrics.snapshot();
+        final Map<String, dynamic> snapshot = metrics.snapshot();
         expect(snapshot['timeoutCount'], equals(1));
 
         // Release the original lock
@@ -231,8 +243,8 @@ void ultraMutexTests() {
 
     test('MutexPool should maintain correct mutex lifecycle', () {
       // Get the same mutex twice - should return the same instance
-      final mutex1 = pool.getMutex('test-mutex');
-      final mutex2 = pool.getMutex('test-mutex');
+      final IMutex mutex1 = pool.getMutex('test-mutex');
+      final IMutex mutex2 = pool.getMutex('test-mutex');
 
       expect(identical(mutex1, mutex2), isTrue);
       expect(mutex1.name, equals('test-mutex'));
@@ -241,7 +253,7 @@ void ultraMutexTests() {
       pool.releaseMutex('test-mutex');
 
       // Get it again - should be a new instance
-      final mutex3 = pool.getMutex('test-mutex');
+      final IMutex mutex3 = pool.getMutex('test-mutex');
       expect(identical(mutex1, mutex3), isFalse);
       expect(mutex3.name, equals('test-mutex'));
     });
@@ -250,14 +262,14 @@ void ultraMutexTests() {
       'MutexPool should handle concurrent getMutex calls correctly',
       () async {
         // Create a list to track the mutexes
-        final mutexes = <IMutex>[];
+        final List<IMutex> mutexes = <IMutex>[];
 
         // Get the same mutex from multiple concurrent tasks
-        final futures = <Future<void>>[];
+        final List<Future<void>> futures = <Future<void>>[];
         for (int i = 0; i < 10; i++) {
           futures.add(
             Future<void>(() {
-              final mutex = pool.getMutex('concurrent-test');
+              final IMutex mutex = pool.getMutex('concurrent-test');
               mutexes.add(mutex);
             }),
           );
@@ -275,15 +287,16 @@ void ultraMutexTests() {
 
     test('MutexPool should not remove active mutexes during cleanup', () async {
       // Get a mutex and lock it
-      final mutex = pool.getMutex('active-mutex');
+      final IMutex mutex = pool.getMutex('active-mutex');
       await mutex.lock();
 
       // Directly call the cleanup method
-      // We need to use reflection or test a protected method here - for now we'll just
+      // We need to use reflection or test a protected method here - for
+      // now we'll just
       // test that the mutex remains accessible through the pool
 
       // We should still be able to get the same mutex
-      final sameInstance = pool.getMutex('active-mutex');
+      final IMutex sameInstance = pool.getMutex('active-mutex');
       expect(identical(mutex, sameInstance), isTrue);
 
       // Unlock the mutex
