@@ -4,7 +4,7 @@ description: >
   synchronization. Supports atomic ops, deadlock prevention, and 
   lightweight resource locking.
 
-version: 1.0.6
+version: 1.0.7
 homepage: https://github.com/Chief-Strategist-J/scaibu_mutex_lock
 repository: https://github.com/Chief-Strategist-J/scaibu_mutex_lock
 issue_tracker: https://github.com/Chief-Strategist-J/scaibu_mutex_lock/issues
