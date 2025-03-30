@@ -15,9 +15,15 @@ environment:
 
 
 dependencies:
+  bloc: ^9.0.0
+  bloc_test: ^10.0.0
   collection: ^1.19.1
   flutter:
     sdk: flutter
+  flutter_bloc: ^9.1.0
+  mockito: ^5.4.5
+  shared_preferences: ^2.5.3
+  uuid: ^4.5.1
 
 
 dev_dependencies:
@@ -26,6 +32,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   test: ^1.25.15
+  build_runner: ^2.4.15
 
 flutter:
 
