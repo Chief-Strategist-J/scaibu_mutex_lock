@@ -176,29 +176,29 @@ For fine-grained control over lock acquisition and release, allowing you to mana
 
 ```dart
 Future<void> updateConfiguration(Config config) async {
-  final configMutex = MutexService().getMutex('app-configuration');
+   final configMutex = MutexService().getMutex('app-configuration');
 
-  print('Waiting to acquire configuration lock...');
-  await configMutex.lock(); // This will wait until the lock is available
-  print('Lock acquired, updating configuration');
+   print('Waiting to acquire configuration lock...');
+   await configMutex.lock(); // This will wait until the lock is available
+   print('Lock acquired, updating configuration');
 
-  try {
-    // Critical section operations - only one thread can be here at a time
-    final currentConfig = await loadConfigFromDisk();
-    currentConfig.merge(config);
-    await validateConfiguration(currentConfig); // Might throw if invalid
-    await writeConfigToDisk(currentConfig);
-    await notifyConfigListeners();
-    print('Configuration updated successfully');
-  } catch (e) {
-    print('Configuration update failed: $e');
-    // Handle error - perhaps reverting to previous configuration
-    await restorePreviousConfig();
-  } finally {
-    // Ensure lock is always released even if exceptions occur
-    configMutex.unlock();
-    print('Configuration lock released');
-  }
+   try {
+      // Critical section operations - only one thread can be here at a time
+      final currentConfig = await loadConfigFromDisk();
+      currentConfig.merge(config);
+      await validateConfiguration(currentConfig); // Might throw if invalid
+      await writeConfigToDisk(currentConfig);
+      await notifyConfigListeners();
+      print('Configuration updated successfully');
+   } catch (e) {
+      print('Configuration update failed: $e');
+      // Handle error - perhaps reverting to previous configuration
+      await restorePreviousConfig();
+   } finally {
+      // Ensure lock is always released even if exceptions occur
+      configMutex.unlock();
+      print('Configuration lock released');
+   }
 }
 ```
 
@@ -210,43 +210,43 @@ For cleaner code with automatic lock management, the `protect` method handles lo
 
 ```dart
 Future<PaymentResult> processPayment(Payment payment) async {
-  final paymentMutex = MutexService().getMutex('payment-processor');
+   final paymentMutex = MutexService().getMutex('payment-processor');
 
-  // The protect method automatically acquires and releases the lock
-  final result = await paymentMutex.protect(() async {
-    print('Payment processing started for order ${payment.orderId}');
+   // The protect method automatically acquires and releases the lock
+   final result = await paymentMutex.protect(() async {
+      print('Payment processing started for order ${payment.orderId}');
 
-    // These operations will be protected by the mutex
-    final account = await getAccount(payment.accountId);
+      // These operations will be protected by the mutex
+      final account = await getAccount(payment.accountId);
 
-    // Verify sufficient funds
-    if (account.balance < payment.amount) {
-      throw InsufficientFundsException('Not enough funds to process payment');
-    }
+      // Verify sufficient funds
+      if (account.balance < payment.amount) {
+         throw InsufficientFundsException('Not enough funds to process payment');
+      }
 
-    // Deduct payment amount
-    account.balance -= payment.amount;
-    await saveAccount(account);
+      // Deduct payment amount
+      account.balance -= payment.amount;
+      await saveAccount(account);
 
-    // Record transaction
-    final transaction = Transaction(
-        id: generateTransactionId(),
-        accountId: payment.accountId,
-        amount: payment.amount,
-        timestamp: DateTime.now(),
-        type: TransactionType.payment
-    );
-    await recordTransaction(transaction);
+      // Record transaction
+      final transaction = Transaction(
+              id: generateTransactionId(),
+              accountId: payment.accountId,
+              amount: payment.amount,
+              timestamp: DateTime.now(),
+              type: TransactionType.payment
+      );
+      await recordTransaction(transaction);
 
-    print('Payment processed successfully');
-    return PaymentResult(
-        success: true,
-        transactionId: transaction.id,
-        timestamp: transaction.timestamp
-    );
-  });
+      print('Payment processed successfully');
+      return PaymentResult(
+              success: true,
+              transactionId: transaction.id,
+              timestamp: transaction.timestamp
+      );
+   });
 
-  return result;
+   return result;
 }
 ```
 
@@ -258,28 +258,28 @@ For scenarios where waiting is undesirable, such as UI operations that shouldn't
 
 ```dart
 Future<void> refreshUserInterface() async {
-  final uiMutex = MutexService().getMutex('ui-refresh');
+   final uiMutex = MutexService().getMutex('ui-refresh');
 
-  // Try to acquire the lock without blocking
-  if (uiMutex.tryLock()) {
-    try {
-      print('Starting UI refresh');
-      // Update UI components
-      await loadDashboardData();
-      await updateWidgets();
-      await refreshVisuals();
-      print('UI refresh complete');
-    } finally {
-      uiMutex.unlock();
-      print('UI refresh lock released');
-    }
-  } else {
-    // UI refresh is already in progress, skip this request
-    print('UI refresh already in progress, skipping duplicate request');
+   // Try to acquire the lock without blocking
+   if (uiMutex.tryLock()) {
+      try {
+         print('Starting UI refresh');
+         // Update UI components
+         await loadDashboardData();
+         await updateWidgets();
+         await refreshVisuals();
+         print('UI refresh complete');
+      } finally {
+         uiMutex.unlock();
+         print('UI refresh lock released');
+      }
+   } else {
+      // UI refresh is already in progress, skip this request
+      print('UI refresh already in progress, skipping duplicate request');
 
-    // Optionally, we could show a "refresh in progress" indicator to the user
-    showRefreshInProgressIndicator();
-  }
+      // Optionally, we could show a "refresh in progress" indicator to the user
+      showRefreshInProgressIndicator();
+   }
 }
 ```
 
@@ -291,36 +291,36 @@ To prevent indefinite waiting, which could lead to poor user experience or block
 
 ```dart
 Future<void> synchronizeWithServer() async {
-  final syncMutex = MutexService().getMutex('server-sync');
+   final syncMutex = MutexService().getMutex('server-sync');
 
-  print('Attempting to start server synchronization...');
+   print('Attempting to start server synchronization...');
 
-  // Try to acquire the lock with a timeout
-  final acquired = await syncMutex.lockWithTimeout(Duration(seconds: 5));
+   // Try to acquire the lock with a timeout
+   final acquired = await syncMutex.lockWithTimeout(Duration(seconds: 5));
 
-  if (acquired) {
-    try {
-      print('Starting server synchronization');
-      // Perform synchronization operations
-      await uploadPendingChanges();
-      await downloadServerUpdates();
-      await reconcileConflicts();
-      print('Synchronization complete');
-    } catch (e) {
-      print('Synchronization error: $e');
-    } finally {
-      syncMutex.unlock();
-      print('Synchronization lock released');
-    }
-  } else {
-    // Lock acquisition timed out
-    print('Could not acquire sync lock within timeout period');
-    print('Another synchronization is likely in progress');
+   if (acquired) {
+      try {
+         print('Starting server synchronization');
+         // Perform synchronization operations
+         await uploadPendingChanges();
+         await downloadServerUpdates();
+         await reconcileConflicts();
+         print('Synchronization complete');
+      } catch (e) {
+         print('Synchronization error: $e');
+      } finally {
+         syncMutex.unlock();
+         print('Synchronization lock released');
+      }
+   } else {
+      // Lock acquisition timed out
+      print('Could not acquire sync lock within timeout period');
+      print('Another synchronization is likely in progress');
 
-    // Notify user and possibly schedule retry
-    notifyUser('Synchronization delayed - will try again automatically');
-    scheduleRetry(() => synchronizeWithServer(), delay: Duration(minutes: 2));
-  }
+      // Notify user and possibly schedule retry
+      notifyUser('Synchronization delayed - will try again automatically');
+      scheduleRetry(() => synchronizeWithServer(), delay: Duration(minutes: 2));
+   }
 }
 ```
 
@@ -336,75 +336,75 @@ A read-write lock permits multiple simultaneous read operations while ensuring e
 import 'package:mutex_library/read_write_lock.dart';
 
 class CacheManager {
-  final Map<String, dynamic> _cache = {};
-  final ReadWriteLock _lock = ReadWriteLock('cache-manager');
+   final Map<String, dynamic> _cache = {};
+   final ReadWriteLock _lock = ReadWriteLock('cache-manager');
 
-  // Multiple readers can access the cache simultaneously
-  Future<T?> get<T>(String key) async {
-    return await _lock.read(() async {
-      print('Reading from cache: $key');
-      await Future.delayed(Duration(milliseconds: 20)); // Simulate read time
-      final value = _cache[key];
-      print('Cache read complete for $key: ${value != null ? "Hit" : "Miss"}');
-      return value as T?;
-    });
-  }
+   // Multiple readers can access the cache simultaneously
+   Future<T?> get<T>(String key) async {
+      return await _lock.read(() async {
+         print('Reading from cache: $key');
+         await Future.delayed(Duration(milliseconds: 20)); // Simulate read time
+         final value = _cache[key];
+         print('Cache read complete for $key: ${value != null ? "Hit" : "Miss"}');
+         return value as T?;
+      });
+   }
 
-  // Writers get exclusive access - blocks all readers while writing
-  Future<void> set<T>(String key, T value) async {
-    await _lock.write(() async {
-      print('Writing to cache: $key');
-      await Future.delayed(Duration(milliseconds: 50)); // Simulate write time
-      _cache[key] = value;
-      print('Cache write complete for $key');
-    });
-  }
+   // Writers get exclusive access - blocks all readers while writing
+   Future<void> set<T>(String key, T value) async {
+      await _lock.write(() async {
+         print('Writing to cache: $key');
+         await Future.delayed(Duration(milliseconds: 50)); // Simulate write time
+         _cache[key] = value;
+         print('Cache write complete for $key');
+      });
+   }
 
-  // Example of a complex operation that updates multiple entries
-  Future<void> batchUpdate(Map<String, dynamic> entries) async {
-    await _lock.write(() async {
-      print('Starting batch update of ${entries.length} entries');
+   // Example of a complex operation that updates multiple entries
+   Future<void> batchUpdate(Map<String, dynamic> entries) async {
+      await _lock.write(() async {
+         print('Starting batch update of ${entries.length} entries');
 
-      for (final entry in entries.entries) {
-        _cache[entry.key] = entry.value;
-        // Simulate processing time for each entry
-        await Future.delayed(Duration(milliseconds: 10));
-      }
+         for (final entry in entries.entries) {
+            _cache[entry.key] = entry.value;
+            // Simulate processing time for each entry
+            await Future.delayed(Duration(milliseconds: 10));
+         }
 
-      print('Batch update complete');
-    });
-  }
+         print('Batch update complete');
+      });
+   }
 }
 
 // Usage example
 Future<void> demonstrateReadWriteLock() async {
-  final cache = CacheManager();
+   final cache = CacheManager();
 
-  // Populate cache with initial values
-  await cache.set('user_1', {'name': 'Alice', 'age': 30});
-  await cache.set('user_2', {'name': 'Bob', 'age': 25});
+   // Populate cache with initial values
+   await cache.set('user_1', {'name': 'Alice', 'age': 30});
+   await cache.set('user_2', {'name': 'Bob', 'age': 25});
 
-  // Execute concurrent operations
-  await Future.wait([
-    // Multiple reads can happen in parallel
-    cache.get<Map>('user_1'),
-    cache.get<Map>('user_2'),
-    cache.get<Map>('user_3'), // Cache miss
+   // Execute concurrent operations
+   await Future.wait([
+      // Multiple reads can happen in parallel
+      cache.get<Map>('user_1'),
+      cache.get<Map>('user_2'),
+      cache.get<Map>('user_3'), // Cache miss
 
-    // Write operations get exclusive access
-    cache.set('user_3', {'name': 'Charlie', 'age': 35}),
+      // Write operations get exclusive access
+      cache.set('user_3', {'name': 'Charlie', 'age': 35}),
 
-    // More read operations
-    cache.get<Map>('user_1'),
+      // More read operations
+      cache.get<Map>('user_1'),
 
-    // Batch update (exclusive access)
-    cache.batchUpdate({
-      'user_4': {'name': 'David', 'age': 40},
-      'user_5': {'name': 'Eva', 'age': 22}
-    })
-  ]);
+      // Batch update (exclusive access)
+      cache.batchUpdate({
+         'user_4': {'name': 'David', 'age': 40},
+         'user_5': {'name': 'Eva', 'age': 22}
+      })
+   ]);
 
-  print('All cache operations completed');
+   print('All cache operations completed');
 }
 ```
 
@@ -417,32 +417,32 @@ I'll continue the documentation from where it left off and add more details abou
 
 ```dart
   Future<void> recalculateDocumentStatistics(String docId) async {
-  await Future.delayed(Duration(milliseconds: 200));
+   await Future.delayed(Duration(milliseconds: 200));
 }
 
 Future<void> updateDocumentVersion(String docId) async {
-  await Future.delayed(Duration(milliseconds: 50));
+   await Future.delayed(Duration(milliseconds: 50));
 }
 
 Future<List<String>> getDocumentSections(String docId) async {
-  await Future.delayed(Duration(milliseconds: 100));
-  return ['section-1', 'section-2', 'section-3'];
+   await Future.delayed(Duration(milliseconds: 100));
+   return ['section-1', 'section-2', 'section-3'];
 }
 
 Future<void> validateSectionContent(String docId, String sectionId) async {
-  await Future.delayed(Duration(milliseconds: 150));
+   await Future.delayed(Duration(milliseconds: 150));
 }
 
 Future<void> markSectionAsPublished(String docId, String sectionId) async {
-  await Future.delayed(Duration(milliseconds: 100));
+   await Future.delayed(Duration(milliseconds: 100));
 }
 
 Future<void> markDocumentAsPublished(String docId) async {
-  await Future.delayed(Duration(milliseconds: 150));
+   await Future.delayed(Duration(milliseconds: 150));
 }
 
 Future<void> notifySubscribers(String docId, String event) async {
-  await Future.delayed(Duration(milliseconds: 200));
+   await Future.delayed(Duration(milliseconds: 200));
 }
 }
 ```
@@ -457,86 +457,86 @@ The library extends beyond local process locking to distributed locking across m
 import 'package:mutex_library/distributed_mutex.dart';
 
 class DistributedJobProcessor {
-  final DistributedMutex _mutex;
+   final DistributedMutex _mutex;
 
-  DistributedJobProcessor({required String redisUrl}) :
-        _mutex = DistributedMutex(
-            key: 'batch-job-processor',
-            lockTimeoutSeconds: 300,  // 5 minutes
-            redisConnectionString: redisUrl
-        );
+   DistributedJobProcessor({required String redisUrl}) :
+              _mutex = DistributedMutex(
+                      key: 'batch-job-processor',
+                      lockTimeoutSeconds: 300,  // 5 minutes
+                      redisConnectionString: redisUrl
+              );
 
-  Future<void> processBatchJob(String batchId) async {
-    print('Attempting to process batch $batchId');
+   Future<void> processBatchJob(String batchId) async {
+      print('Attempting to process batch $batchId');
 
-    final lockAcquired = await _mutex.tryLock();
+      final lockAcquired = await _mutex.tryLock();
 
-    if (!lockAcquired) {
-      print('Could not acquire distributed lock - batch $batchId is likely being processed by another instance');
-      return;
-    }
-
-    try {
-      print('Lock acquired, processing batch $batchId');
-
-      // Fetch batch data
-      final batchItems = await fetchBatchItems(batchId);
-      print('Processing ${batchItems.length} items in batch $batchId');
-
-      // Process each item
-      final results = <String, String>{};
-      for (final item in batchItems) {
-        try {
-          await processItem(item);
-          results[item.id] = 'success';
-        } catch (e) {
-          results[item.id] = 'error: $e';
-          print('Error processing item ${item.id}: $e');
-        }
-
-        // Keep the lock alive during long-running operations
-        await _mutex.extendLock();
+      if (!lockAcquired) {
+         print('Could not acquire distributed lock - batch $batchId is likely being processed by another instance');
+         return;
       }
 
-      // Record batch completion
-      await markBatchComplete(batchId, results);
-      print('Batch $batchId processing complete');
+      try {
+         print('Lock acquired, processing batch $batchId');
 
-    } catch (e) {
-      print('Error during batch processing: $e');
-      await markBatchFailed(batchId, e.toString());
-    } finally {
-      // Release the distributed lock
-      await _mutex.unlock();
-      print('Distributed lock released');
-    }
-  }
+         // Fetch batch data
+         final batchItems = await fetchBatchItems(batchId);
+         print('Processing ${batchItems.length} items in batch $batchId');
 
-  // Simulated batch processing methods
-  Future<List<BatchItem>> fetchBatchItems(String batchId) async {
-    await Future.delayed(Duration(milliseconds: 300));
-    return List.generate(10, (i) => BatchItem(id: 'item-$i', data: 'Sample data $i'));
-  }
+         // Process each item
+         final results = <String, String>{};
+         for (final item in batchItems) {
+            try {
+               await processItem(item);
+               results[item.id] = 'success';
+            } catch (e) {
+               results[item.id] = 'error: $e';
+               print('Error processing item ${item.id}: $e');
+            }
 
-  Future<void> processItem(BatchItem item) async {
-    await Future.delayed(Duration(milliseconds: 200));
-    print('Processed item ${item.id}');
-  }
+            // Keep the lock alive during long-running operations
+            await _mutex.extendLock();
+         }
 
-  Future<void> markBatchComplete(String batchId, Map<String, String> results) async {
-    await Future.delayed(Duration(milliseconds: 250));
-  }
+         // Record batch completion
+         await markBatchComplete(batchId, results);
+         print('Batch $batchId processing complete');
 
-  Future<void> markBatchFailed(String batchId, String error) async {
-    await Future.delayed(Duration(milliseconds: 150));
-  }
+      } catch (e) {
+         print('Error during batch processing: $e');
+         await markBatchFailed(batchId, e.toString());
+      } finally {
+         // Release the distributed lock
+         await _mutex.unlock();
+         print('Distributed lock released');
+      }
+   }
+
+   // Simulated batch processing methods
+   Future<List<BatchItem>> fetchBatchItems(String batchId) async {
+      await Future.delayed(Duration(milliseconds: 300));
+      return List.generate(10, (i) => BatchItem(id: 'item-$i', data: 'Sample data $i'));
+   }
+
+   Future<void> processItem(BatchItem item) async {
+      await Future.delayed(Duration(milliseconds: 200));
+      print('Processed item ${item.id}');
+   }
+
+   Future<void> markBatchComplete(String batchId, Map<String, String> results) async {
+      await Future.delayed(Duration(milliseconds: 250));
+   }
+
+   Future<void> markBatchFailed(String batchId, String error) async {
+      await Future.delayed(Duration(milliseconds: 150));
+   }
 }
 
 class BatchItem {
-  final String id;
-  final String data;
+   final String id;
+   final String data;
 
-  BatchItem({required this.id, required this.data});
+   BatchItem({required this.id, required this.data});
 }
 ```
 
@@ -551,166 +551,166 @@ import 'package:mutex_library/mutex_service.dart';
 import 'package:mutex_library/deadlock_detector.dart';
 
 class BankingSystem {
-  final MutexService _mutexService = MutexService();
-  final DeadlockDetector _deadlockDetector = DeadlockDetector();
+   final MutexService _mutexService = MutexService();
+   final DeadlockDetector _deadlockDetector = DeadlockDetector();
 
-  Future<void> transferFunds(String fromAccount, String toAccount, double amount) async {
-    print('Preparing to transfer $amount from $fromAccount to $toAccount');
+   Future<void> transferFunds(String fromAccount, String toAccount, double amount) async {
+      print('Preparing to transfer $amount from $fromAccount to $toAccount');
 
-    // Register this operation with the deadlock detector
-    final operationId = _deadlockDetector.registerOperation('transfer-$fromAccount-$toAccount');
-
-    try {
-      // Acquire lock for source account with timeout and deadlock detection
-      final sourceMutex = _mutexService.getMutex('account-$fromAccount');
-      final lockAcquired = await sourceMutex.lockWithTimeout(
-          Duration(seconds: 5),
-          onWaiting: () => _deadlockDetector.registerWaiting(operationId, 'account-$fromAccount')
-      );
-
-      if (!lockAcquired) {
-        throw TimeoutException('Could not acquire lock for account $fromAccount within timeout');
-      }
-
-      _deadlockDetector.registerAcquired(operationId, 'account-$fromAccount');
+      // Register this operation with the deadlock detector
+      final operationId = _deadlockDetector.registerOperation('transfer-$fromAccount-$toAccount');
 
       try {
-        print('Lock acquired for source account $fromAccount');
+         // Acquire lock for source account with timeout and deadlock detection
+         final sourceMutex = _mutexService.getMutex('account-$fromAccount');
+         final lockAcquired = await sourceMutex.lockWithTimeout(
+                 Duration(seconds: 5),
+                 onWaiting: () => _deadlockDetector.registerWaiting(operationId, 'account-$fromAccount')
+         );
 
-        // Verify sufficient funds
-        final sourceBalance = await getAccountBalance(fromAccount);
-        if (sourceBalance < amount) {
-          throw InsufficientFundsException('Insufficient funds in account $fromAccount');
-        }
+         if (!lockAcquired) {
+            throw TimeoutException('Could not acquire lock for account $fromAccount within timeout');
+         }
 
-        // Acquire lock for destination account
-        final destMutex = _mutexService.getMutex('account-$toAccount');
-        final destLockAcquired = await destMutex.lockWithTimeout(
-            Duration(seconds: 5),
-            onWaiting: () => _deadlockDetector.registerWaiting(operationId, 'account-$toAccount')
-        );
+         _deadlockDetector.registerAcquired(operationId, 'account-$fromAccount');
 
-        if (!destLockAcquired) {
-          throw TimeoutException('Could not acquire lock for account $toAccount within timeout');
-        }
+         try {
+            print('Lock acquired for source account $fromAccount');
 
-        _deadlockDetector.registerAcquired(operationId, 'account-$toAccount');
+            // Verify sufficient funds
+            final sourceBalance = await getAccountBalance(fromAccount);
+            if (sourceBalance < amount) {
+               throw InsufficientFundsException('Insufficient funds in account $fromAccount');
+            }
 
-        try {
-          print('Lock acquired for destination account $toAccount');
+            // Acquire lock for destination account
+            final destMutex = _mutexService.getMutex('account-$toAccount');
+            final destLockAcquired = await destMutex.lockWithTimeout(
+                    Duration(seconds: 5),
+                    onWaiting: () => _deadlockDetector.registerWaiting(operationId, 'account-$toAccount')
+            );
 
-          // Perform the transfer
-          await updateAccountBalance(fromAccount, -amount);
-          await updateAccountBalance(toAccount, amount);
+            if (!destLockAcquired) {
+               throw TimeoutException('Could not acquire lock for account $toAccount within timeout');
+            }
 
-          // Record the transaction
-          await recordTransaction(fromAccount, toAccount, amount);
+            _deadlockDetector.registerAcquired(operationId, 'account-$toAccount');
 
-          print('Transfer complete: $amount from $fromAccount to $toAccount');
-        } finally {
-          // Release destination account lock
-          destMutex.unlock();
-          _deadlockDetector.registerReleased(operationId, 'account-$toAccount');
-          print('Destination account lock released');
-        }
+            try {
+               print('Lock acquired for destination account $toAccount');
+
+               // Perform the transfer
+               await updateAccountBalance(fromAccount, -amount);
+               await updateAccountBalance(toAccount, amount);
+
+               // Record the transaction
+               await recordTransaction(fromAccount, toAccount, amount);
+
+               print('Transfer complete: $amount from $fromAccount to $toAccount');
+            } finally {
+               // Release destination account lock
+               destMutex.unlock();
+               _deadlockDetector.registerReleased(operationId, 'account-$toAccount');
+               print('Destination account lock released');
+            }
+         } finally {
+            // Release source account lock
+            sourceMutex.unlock();
+            _deadlockDetector.registerReleased(operationId, 'account-$fromAccount');
+            print('Source account lock released');
+         }
       } finally {
-        // Release source account lock
-        sourceMutex.unlock();
-        _deadlockDetector.registerReleased(operationId, 'account-$fromAccount');
-        print('Source account lock released');
+         // Operation complete
+         _deadlockDetector.unregisterOperation(operationId);
       }
-    } finally {
-      // Operation complete
-      _deadlockDetector.unregisterOperation(operationId);
-    }
-  }
+   }
 
-  // Smart transfer that automatically determines lock acquisition order
-  // to prevent deadlocks
-  Future<void> smartTransferFunds(String account1, String account2, double amount) async {
-    // Always acquire locks in a consistent order to prevent deadlocks
-    final orderedAccounts = [account1, account2]..sort();
+   // Smart transfer that automatically determines lock acquisition order
+   // to prevent deadlocks
+   Future<void> smartTransferFunds(String account1, String account2, double amount) async {
+      // Always acquire locks in a consistent order to prevent deadlocks
+      final orderedAccounts = [account1, account2]..sort();
 
-    final firstAccount = orderedAccounts[0];
-    final secondAccount = orderedAccounts[1];
+      final firstAccount = orderedAccounts[0];
+      final secondAccount = orderedAccounts[1];
 
-    print('Smart transfer using ordered locking: $firstAccount, then $secondAccount');
+      print('Smart transfer using ordered locking: $firstAccount, then $secondAccount');
 
-    // Acquire first account lock
-    final firstMutex = _mutexService.getMutex('account-$firstAccount');
-    await firstMutex.lock();
-
-    try {
-      print('Lock acquired for first account $firstAccount');
-
-      // Acquire second account lock
-      final secondMutex = _mutexService.getMutex('account-$secondAccount');
-      await secondMutex.lock();
+      // Acquire first account lock
+      final firstMutex = _mutexService.getMutex('account-$firstAccount');
+      await firstMutex.lock();
 
       try {
-        print('Lock acquired for second account $secondAccount');
+         print('Lock acquired for first account $firstAccount');
 
-        // Determine transfer direction
-        if (firstAccount == account1) {
-          // Transfer from account1 to account2
-          await doTransfer(account1, account2, amount);
-        } else {
-          // Transfer from account2 to account1
-          await doTransfer(account2, account1, amount);
-        }
+         // Acquire second account lock
+         final secondMutex = _mutexService.getMutex('account-$secondAccount');
+         await secondMutex.lock();
+
+         try {
+            print('Lock acquired for second account $secondAccount');
+
+            // Determine transfer direction
+            if (firstAccount == account1) {
+               // Transfer from account1 to account2
+               await doTransfer(account1, account2, amount);
+            } else {
+               // Transfer from account2 to account1
+               await doTransfer(account2, account1, amount);
+            }
+         } finally {
+            // Release second account lock
+            secondMutex.unlock();
+            print('Second account lock released');
+         }
       } finally {
-        // Release second account lock
-        secondMutex.unlock();
-        print('Second account lock released');
+         // Release first account lock
+         firstMutex.unlock();
+         print('First account lock released');
       }
-    } finally {
-      // Release first account lock
-      firstMutex.unlock();
-      print('First account lock released');
-    }
-  }
+   }
 
-  // Helper method to perform the actual transfer
-  Future<void> doTransfer(String from, String to, double amount) async {
-    final sourceBalance = await getAccountBalance(from);
-    if (sourceBalance < amount) {
-      throw InsufficientFundsException('Insufficient funds in account $from');
-    }
+   // Helper method to perform the actual transfer
+   Future<void> doTransfer(String from, String to, double amount) async {
+      final sourceBalance = await getAccountBalance(from);
+      if (sourceBalance < amount) {
+         throw InsufficientFundsException('Insufficient funds in account $from');
+      }
 
-    await updateAccountBalance(from, -amount);
-    await updateAccountBalance(to, amount);
-    await recordTransaction(from, to, amount);
+      await updateAccountBalance(from, -amount);
+      await updateAccountBalance(to, amount);
+      await recordTransaction(from, to, amount);
 
-    print('Transfer complete: $amount from $from to $to');
-  }
+      print('Transfer complete: $amount from $from to $to');
+   }
 
-  // Simulated banking operations
-  Future<double> getAccountBalance(String accountId) async {
-    await Future.delayed(Duration(milliseconds: 100));
-    return 1000.0; // Simulated balance
-  }
+   // Simulated banking operations
+   Future<double> getAccountBalance(String accountId) async {
+      await Future.delayed(Duration(milliseconds: 100));
+      return 1000.0; // Simulated balance
+   }
 
-  Future<void> updateAccountBalance(String accountId, double change) async {
-    await Future.delayed(Duration(milliseconds: 150));
-  }
+   Future<void> updateAccountBalance(String accountId, double change) async {
+      await Future.delayed(Duration(milliseconds: 150));
+   }
 
-  Future<void> recordTransaction(String fromAccount, String toAccount, double amount) async {
-    await Future.delayed(Duration(milliseconds: 200));
-  }
+   Future<void> recordTransaction(String fromAccount, String toAccount, double amount) async {
+      await Future.delayed(Duration(milliseconds: 200));
+   }
 }
 
 class InsufficientFundsException implements Exception {
-  final String message;
-  InsufficientFundsException(this.message);
-  @override
-  String toString() => 'InsufficientFundsException: $message';
+   final String message;
+   InsufficientFundsException(this.message);
+   @override
+   String toString() => 'InsufficientFundsException: $message';
 }
 
 class TimeoutException implements Exception {
-  final String message;
-  TimeoutException(this.message);
-  @override
-  String toString() => 'TimeoutException: $message';
+   final String message;
+   TimeoutException(this.message);
+   @override
+   String toString() => 'TimeoutException: $message';
 }
 ```
 
@@ -726,37 +726,37 @@ To help you choose the right mutex implementation for your specific use case, th
 import 'package:mutex_library/benchmark.dart';
 
 void main() async {
-  final benchmark = MutexBenchmark();
+   final benchmark = MutexBenchmark();
 
-  print('Running mutex performance benchmarks...');
+   print('Running mutex performance benchmarks...');
 
-  // Run benchmarks with different configurations
-  await benchmark.runBenchmark(
-      name: 'Light Contention',
-      mutexCount: 10,
-      operationCount: 1000,
-      concurrentOperations: 5,
-      operationDurationMs: 5
-  );
+   // Run benchmarks with different configurations
+   await benchmark.runBenchmark(
+           name: 'Light Contention',
+           mutexCount: 10,
+           operationCount: 1000,
+           concurrentOperations: 5,
+           operationDurationMs: 5
+   );
 
-  await benchmark.runBenchmark(
-      name: 'Heavy Contention',
-      mutexCount: 3,
-      operationCount: 1000,
-      concurrentOperations: 20,
-      operationDurationMs: 10
-  );
+   await benchmark.runBenchmark(
+           name: 'Heavy Contention',
+           mutexCount: 3,
+           operationCount: 1000,
+           concurrentOperations: 20,
+           operationDurationMs: 10
+   );
 
-  await benchmark.runBenchmark(
-      name: 'Long Operations',
-      mutexCount: 5,
-      operationCount: 100,
-      concurrentOperations: 10,
-      operationDurationMs: 50
-  );
+   await benchmark.runBenchmark(
+           name: 'Long Operations',
+           mutexCount: 5,
+           operationCount: 100,
+           concurrentOperations: 10,
+           operationDurationMs: 50
+   );
 
-  print('Benchmark results:');
-  benchmark.printResults();
+   print('Benchmark results:');
+   benchmark.printResults();
 }
 ```
 
@@ -770,24 +770,24 @@ The library includes mechanisms to manage memory usage and clean up unused mutex
 import 'package:mutex_library/mutex_service.dart';
 
 Future<void> monitorMutexUsage() async {
-  final service = MutexService();
+   final service = MutexService();
 
-  // Get statistics on mutex usage
-  final stats = service.getStatistics();
-  print('Active mutexes: ${stats.activeMutexCount}');
-  print('Total lock acquisitions: ${stats.totalLockAcquisitions}');
-  print('Total lock timeouts: ${stats.totalLockTimeouts}');
-  print('Average lock wait time: ${stats.averageLockWaitTimeMs}ms');
+   // Get statistics on mutex usage
+   final stats = service.getStatistics();
+   print('Active mutexes: ${stats.activeMutexCount}');
+   print('Total lock acquisitions: ${stats.totalLockAcquisitions}');
+   print('Total lock timeouts: ${stats.totalLockTimeouts}');
+   print('Average lock wait time: ${stats.averageLockWaitTimeMs}ms');
 
-  // Clean up unused mutexes
-  final removed = service.cleanupUnusedMutexes(Duration(minutes: 30));
-  print('Removed $removed unused mutexes');
+   // Clean up unused mutexes
+   final removed = service.cleanupUnusedMutexes(Duration(minutes: 30));
+   print('Removed $removed unused mutexes');
 
-  // Monitor current contention
-  final contendedMutexes = service.getHighContentionMutexes();
-  for (final mutex in contendedMutexes) {
-    print('High contention mutex: ${mutex.name}, queue length: ${mutex.queueLength}');
-  }
+   // Monitor current contention
+   final contendedMutexes = service.getHighContentionMutexes();
+   for (final mutex in contendedMutexes) {
+      print('High contention mutex: ${mutex.name}, queue length: ${mutex.queueLength}');
+   }
 }
 ```
 
@@ -805,118 +805,118 @@ import 'package:provider/provider.dart';
 import 'package:mutex_library/mutex.dart';
 
 class UserRepository extends ChangeNotifier {
-  final SimpleMutex _mutex = SimpleMutex('user-repository');
-  User? _currentUser;
+   final SimpleMutex _mutex = SimpleMutex('user-repository');
+   User? _currentUser;
 
-  User? get currentUser => _currentUser;
+   User? get currentUser => _currentUser;
 
-  Future<void> fetchUser(String userId) async {
-    await _mutex.protect(() async {
-      // Fetch user data from API
-      print('Fetching user $userId');
-      final userData = await _fetchUserFromApi(userId);
+   Future<void> fetchUser(String userId) async {
+      await _mutex.protect(() async {
+         // Fetch user data from API
+         print('Fetching user $userId');
+         final userData = await _fetchUserFromApi(userId);
 
-      // Update local state
-      _currentUser = userData;
-      notifyListeners();
+         // Update local state
+         _currentUser = userData;
+         notifyListeners();
 
-      // Cache user data
-      await _cacheUserData(userData);
-    });
-  }
+         // Cache user data
+         await _cacheUserData(userData);
+      });
+   }
 
-  Future<void> updateUserProfile(Map<String, dynamic> updates) async {
-    await _mutex.protect(() async {
-      if (_currentUser == null) {
-        throw StateError('No user is currently logged in');
-      }
+   Future<void> updateUserProfile(Map<String, dynamic> updates) async {
+      await _mutex.protect(() async {
+         if (_currentUser == null) {
+            throw StateError('No user is currently logged in');
+         }
 
-      // Update user profile
-      print('Updating user profile for ${_currentUser!.id}');
-      final updatedUser = await _updateUserProfileApi(_currentUser!.id, updates);
+         // Update user profile
+         print('Updating user profile for ${_currentUser!.id}');
+         final updatedUser = await _updateUserProfileApi(_currentUser!.id, updates);
 
-      // Update local state
-      _currentUser = updatedUser;
-      notifyListeners();
+         // Update local state
+         _currentUser = updatedUser;
+         notifyListeners();
 
-      // Update cache
-      await _cacheUserData(updatedUser);
-    });
-  }
+         // Update cache
+         await _cacheUserData(updatedUser);
+      });
+   }
 
-  Future<User> _fetchUserFromApi(String userId) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    return User(id: userId, name: 'Test User', email: 'test@example.com');
-  }
+   Future<User> _fetchUserFromApi(String userId) async {
+      await Future.delayed(Duration(milliseconds: 500));
+      return User(id: userId, name: 'Test User', email: 'test@example.com');
+   }
 
-  Future<User> _updateUserProfileApi(String userId, Map<String, dynamic> updates) async {
-    await Future.delayed(Duration(milliseconds: 700));
-    return User(
-        id: userId,
-        name: updates['name'] ?? 'Test User',
-        email: updates['email'] ?? 'test@example.com'
-    );
-  }
+   Future<User> _updateUserProfileApi(String userId, Map<String, dynamic> updates) async {
+      await Future.delayed(Duration(milliseconds: 700));
+      return User(
+              id: userId,
+              name: updates['name'] ?? 'Test User',
+              email: updates['email'] ?? 'test@example.com'
+      );
+   }
 
-  Future<void> _cacheUserData(User user) async {
-    await Future.delayed(Duration(milliseconds: 200));
-    print('User data cached: ${user.id}');
-  }
+   Future<void> _cacheUserData(User user) async {
+      await Future.delayed(Duration(milliseconds: 200));
+      print('User data cached: ${user.id}');
+   }
 }
 
 class User {
-  final String id;
-  final String name;
-  final String email;
+   final String id;
+   final String name;
+   final String email;
 
-  User({required this.id, required this.name, required this.email});
+   User({required this.id, required this.name, required this.email});
 }
 
 // Usage in a Flutter widget
 class UserProfileWidget extends StatelessWidget {
-  final String userId;
+   final String userId;
 
-  const UserProfileWidget({Key? key, required this.userId}) : super(key: key);
+   const UserProfileWidget({Key? key, required this.userId}) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<UserRepository>(
-        builder: (context, userRepo, child) {
-          return FutureBuilder(
-              future: userRepo.fetchUser(userId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                }
+   @override
+   Widget build(BuildContext context) {
+      return Consumer<UserRepository>(
+              builder: (context, userRepo, child) {
+                 return FutureBuilder(
+                         future: userRepo.fetchUser(userId),
+                         builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                               return CircularProgressIndicator();
+                            }
 
-                if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                }
+                            if (snapshot.hasError) {
+                               return Text('Error: ${snapshot.error}');
+                            }
 
-                final user = userRepo.currentUser;
-                if (user == null) {
-                  return Text('User not found');
-                }
+                            final user = userRepo.currentUser;
+                            if (user == null) {
+                               return Text('User not found');
+                            }
 
-                return Column(
-                  children: [
-                    Text('User Profile: ${user.name}'),
-                    Text('Email: ${user.email}'),
-                    ElevatedButton(
-                        onPressed: () async {
-                          await userRepo.updateUserProfile({
-                            'name': 'Updated Name'
-                          });
-                        },
-                        child: Text('Update Name')
-                    )
-                  ],
-                );
+                            return Column(
+                               children: [
+                                  Text('User Profile: ${user.name}'),
+                                  Text('Email: ${user.email}'),
+                                  ElevatedButton(
+                                          onPressed: () async {
+                                             await userRepo.updateUserProfile({
+                                                'name': 'Updated Name'
+                                             });
+                                          },
+                                          child: Text('Update Name')
+                                  )
+                               ],
+                            );
+                         }
+                 );
               }
-          );
-        }
-    );
-  }
+      );
+   }
 }
 ```
 
@@ -930,84 +930,84 @@ import 'package:mutex_library/mutex.dart';
 import 'package:workmanager/workmanager.dart';
 
 class BackgroundSyncManager {
-  static const String SYNC_TASK = 'background-sync-task';
-  final SimpleMutex _mutex = SimpleMutex('background-sync');
+   static const String SYNC_TASK = 'background-sync-task';
+   final SimpleMutex _mutex = SimpleMutex('background-sync');
 
-  Future<void> initialize() async {
-    await Workmanager().initialize(
-        callbackDispatcher,
-        isInDebugMode: true
-    );
+   Future<void> initialize() async {
+      await Workmanager().initialize(
+              callbackDispatcher,
+              isInDebugMode: true
+      );
 
-    // Register periodic background sync task
-    await Workmanager().registerPeriodicTask(
-        'unique-sync-task-id',
-        SYNC_TASK,
-        frequency: Duration(hours: 1),
-        constraints: Constraints(
-            networkType: NetworkType.connected,
-            requiresBatteryNotLow: true
-        )
-    );
-  }
+      // Register periodic background sync task
+      await Workmanager().registerPeriodicTask(
+              'unique-sync-task-id',
+              SYNC_TASK,
+              frequency: Duration(hours: 1),
+              constraints: Constraints(
+                      networkType: NetworkType.connected,
+                      requiresBatteryNotLow: true
+              )
+      );
+   }
 
-  Future<void> runSync() async {
-    print('Background sync requested');
+   Future<void> runSync() async {
+      print('Background sync requested');
 
-    // Try to acquire the mutex with a timeout
-    final acquired = await _mutex.lockWithTimeout(Duration(minutes: 5));
+      // Try to acquire the mutex with a timeout
+      final acquired = await _mutex.lockWithTimeout(Duration(minutes: 5));
 
-    if (!acquired) {
-      print('Another sync is already in progress, skipping this one');
-      return;
-    }
+      if (!acquired) {
+         print('Another sync is already in progress, skipping this one');
+         return;
+      }
 
-    try {
-      print('Starting background sync');
+      try {
+         print('Starting background sync');
 
-      // Perform sync operations
-      await _syncUserData();
-      await _syncAppSettings();
-      await _syncOfflineChanges();
+         // Perform sync operations
+         await _syncUserData();
+         await _syncAppSettings();
+         await _syncOfflineChanges();
 
-      print('Background sync completed successfully');
-    } catch (e) {
-      print('Background sync failed: $e');
-    } finally {
-      _mutex.unlock();
-      print('Background sync mutex released');
-    }
-  }
+         print('Background sync completed successfully');
+      } catch (e) {
+         print('Background sync failed: $e');
+      } finally {
+         _mutex.unlock();
+         print('Background sync mutex released');
+      }
+   }
 
-  // Mock sync operations
-  Future<void> _syncUserData() async {
-    await Future.delayed(Duration(seconds: 2));
-    print('User data synchronized');
-  }
+   // Mock sync operations
+   Future<void> _syncUserData() async {
+      await Future.delayed(Duration(seconds: 2));
+      print('User data synchronized');
+   }
 
-  Future<void> _syncAppSettings() async {
-    await Future.delayed(Duration(seconds: 1));
-    print('App settings synchronized');
-  }
+   Future<void> _syncAppSettings() async {
+      await Future.delayed(Duration(seconds: 1));
+      print('App settings synchronized');
+   }
 
-  Future<void> _syncOfflineChanges() async {
-    await Future.delayed(Duration(seconds: 3));
-    print('Offline changes synchronized');
-  }
+   Future<void> _syncOfflineChanges() async {
+      await Future.delayed(Duration(seconds: 3));
+      print('Offline changes synchronized');
+   }
 }
 
 // Setup background callback
 void callbackDispatcher() {
-  Workmanager().executeTask((task, inputData) async {
-    print('Background task started: $task');
+   Workmanager().executeTask((task, inputData) async {
+      print('Background task started: $task');
 
-    if (task == BackgroundSyncManager.SYNC_TASK) {
-      final syncManager = BackgroundSyncManager();
-      await syncManager.runSync();
-    }
+      if (task == BackgroundSyncManager.SYNC_TASK) {
+         final syncManager = BackgroundSyncManager();
+         await syncManager.runSync();
+      }
 
-    return true;
-  });
+      return true;
+   });
 }
 ```
 
@@ -1023,72 +1023,72 @@ For systems under high load, an adaptive mutex with exponential backoff can help
 import 'package:mutex_library/advanced_mutex.dart';
 
 class ApiRateLimiter {
-  final AdaptiveMutex _mutex = AdaptiveMutex(
-      name: 'api-rate-limiter',
-      initialBackoffMs: 50,
-      maxBackoffMs: 5000,
-      backoffFactor: 2.0
-  );
+   final AdaptiveMutex _mutex = AdaptiveMutex(
+           name: 'api-rate-limiter',
+           initialBackoffMs: 50,
+           maxBackoffMs: 5000,
+           backoffFactor: 2.0
+   );
 
-  Future<T> makeApiCall<T>(Future<T> Function() apiCall) async {
-    int attempts = 0;
-    const maxAttempts = 5;
+   Future<T> makeApiCall<T>(Future<T> Function() apiCall) async {
+      int attempts = 0;
+      const maxAttempts = 5;
 
-    while (attempts < maxAttempts) {
-      attempts++;
+      while (attempts < maxAttempts) {
+         attempts++;
 
-      try {
-        // Try to acquire the mutex with adaptive backoff
-        final acquired = await _mutex.acquire();
+         try {
+            // Try to acquire the mutex with adaptive backoff
+            final acquired = await _mutex.acquire();
 
-        if (!acquired) {
-          print('API rate limit exceeded, backing off (attempt $attempts)');
-          continue;
-        }
+            if (!acquired) {
+               print('API rate limit exceeded, backing off (attempt $attempts)');
+               continue;
+            }
 
-        try {
-          // Execute the API call
-          return await apiCall();
-        } finally {
-          // Release the mutex, indicating success
-          _mutex.release(success: true);
-        }
-      } catch (e) {
-        // Release the mutex, indicating failure
-        _mutex.release(success: false);
+            try {
+               // Execute the API call
+               return await apiCall();
+            } finally {
+               // Release the mutex, indicating success
+               _mutex.release(success: true);
+            }
+         } catch (e) {
+            // Release the mutex, indicating failure
+            _mutex.release(success: false);
 
-        if (attempts >= maxAttempts) {
-          print('Maximum retry attempts reached, giving up');
-          rethrow;
-        }
+            if (attempts >= maxAttempts) {
+               print('Maximum retry attempts reached, giving up');
+               rethrow;
+            }
 
-        print('API call failed, retrying: $e');
+            print('API call failed, retrying: $e');
+         }
       }
-    }
 
-    throw Exception('API call failed after multiple attempts');
-  }
+      throw Exception('API call failed after multiple attempts');
+   }
 }
 
 // Usage example
 Future<void> demonstrateAdaptiveMutex() async {
-  final rateLimiter = ApiRateLimiter();
+   final rateLimiter = ApiRateLimiter();
 
-  // Make multiple API calls concurrently
-  await Future.wait([
-    rateLimiter.makeApiCall(() => fetchUserData('user-1')),
-    rateLimiter.makeApiCall(() => fetchUserData('user-2')),
-    rateLimiter.makeApiCall(() => fetchUserData('user-3')),
-    rateLimiter.makeApiCall(() => fetchUserData('user-4')),
-    rateLimiter.makeApiCall(() => fetchUserData('user-5')),
-  ]);
+   // Make multiple API calls concurrently
+   await Future.wait([
+      rateLimiter.makeApiCall(() => fetchUserData('user-1')),
+      rateLimiter.makeApiCall(() => fetchUserData('user-2')),
+      rateLimiter.makeApiCall(() => fetchUserData('user-3')),
+      rateLimiter.makeApiCall(() => fetchUserData('user-4')),
+      rateLimiter.makeApiCall(() => fetchUserData('user-5')),
+   ]);
 
-  print('All API calls completed');
+   print('All API calls completed');
 }
 
 Future<Map<String, dynamic>> fetchUserData(String userId) async {
-  await Future.delayed(Duration(milliseconds: 300));
-  return {'id': userId, 'name': 'User $userId'};
+   await Future.delayed(Duration(milliseconds: 300));
+   return {'id': userId, 'name': 'User $userId'};
 }
 ```
 
@@ -1102,68 +1102,68 @@ For scenarios where certain operations should take precedence over others:
 import 'package:mutex_library/priority_mutex.dart';
 
 enum OperationPriority {
-  low,
-  medium,
-  high,
-  critical
+   low,
+   medium,
+   high,
+   critical
 }
 
 class EmergencySystem {
-  final PriorityMutex _mutex = PriorityMutex('emergency-system');
+   final PriorityMutex _mutex = PriorityMutex('emergency-system');
 
-  Future<void> handleEmergency(String emergencyId, OperationPriority priority) async {
-    print('Emergency $emergencyId received with priority: $priority');
+   Future<void> handleEmergency(String emergencyId, OperationPriority priority) async {
+      print('Emergency $emergencyId received with priority: $priority');
 
-    // Acquire the mutex with the specified priority
-    await _mutex.lock(priority: priority);
+      // Acquire the mutex with the specified priority
+      await _mutex.lock(priority: priority);
 
-    try {
-      print('Handling emergency $emergencyId');
+      try {
+         print('Handling emergency $emergencyId');
 
-      // Perform emergency response operations
-      await _dispatchFirstResponders(emergencyId);
-      await _notifyAuthorities(emergencyId);
-      await _logEmergencyEvent(emergencyId);
+         // Perform emergency response operations
+         await _dispatchFirstResponders(emergencyId);
+         await _notifyAuthorities(emergencyId);
+         await _logEmergencyEvent(emergencyId);
 
-      print('Emergency $emergencyId handled successfully');
-    } finally {
-      _mutex.unlock();
-      print('Emergency system mutex released');
-    }
-  }
+         print('Emergency $emergencyId handled successfully');
+      } finally {
+         _mutex.unlock();
+         print('Emergency system mutex released');
+      }
+   }
 
-  // Mock emergency operations
-  Future<void> _dispatchFirstResponders(String emergencyId) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    print('First responders dispatched for emergency $emergencyId');
-  }
+   // Mock emergency operations
+   Future<void> _dispatchFirstResponders(String emergencyId) async {
+      await Future.delayed(Duration(milliseconds: 500));
+      print('First responders dispatched for emergency $emergencyId');
+   }
 
-  Future<void> _notifyAuthorities(String emergencyId) async {
-    await Future.delayed(Duration(milliseconds: 300));
-    print('Authorities notified about emergency $emergencyId');
-  }
+   Future<void> _notifyAuthorities(String emergencyId) async {
+      await Future.delayed(Duration(milliseconds: 300));
+      print('Authorities notified about emergency $emergencyId');
+   }
 
-  Future<void> _logEmergencyEvent(String emergencyId) async {
-    await Future.delayed(Duration(milliseconds: 200));
-    print('Emergency event $emergencyId logged');
-  }
+   Future<void> _logEmergencyEvent(String emergencyId) async {
+      await Future.delayed(Duration(milliseconds: 200));
+      print('Emergency event $emergencyId logged');
+   }
 }
 
 // Usage example
 Future<void> demonstratePriorityMutex() async {
-  final emergencySystem = EmergencySystem();
+   final emergencySystem = EmergencySystem();
 
-  // Create a mix of emergency events with different priorities
-  await Future.wait([
-    emergencySystem.handleEmergency('minor-flood-1', OperationPriority.low),
-    emergencySystem.handleEmergency('traffic-accident-1', OperationPriority.medium),
-    emergencySystem.handleEmergency('building-fire-1', OperationPriority.high),
-    emergencySystem.handleEmergency('earthquake-1', OperationPriority.critical),
-    emergencySystem.handleEmergency('minor-flood-2', OperationPriority.low),
-    emergencySystem.handleEmergency('traffic-accident-2', OperationPriority.medium),
-  ]);
+   // Create a mix of emergency events with different priorities
+   await Future.wait([
+      emergencySystem.handleEmergency('minor-flood-1', OperationPriority.low),
+      emergencySystem.handleEmergency('traffic-accident-1', OperationPriority.medium),
+      emergencySystem.handleEmergency('building-fire-1', OperationPriority.high),
+      emergencySystem.handleEmergency('earthquake-1', OperationPriority.critical),
+      emergencySystem.handleEmergency('minor-flood-2', OperationPriority.low),
+      emergencySystem.handleEmergency('traffic-accident-2', OperationPriority.medium),
+   ]);
 
-  print('All emergencies handled');
+   print('All emergencies handled');
 }
 ```
 
@@ -1193,37 +1193,37 @@ Proper error handling ensures that mutexes are always released, even in failure 
 
 ```dart
 Future<void> processUserData(String userId) async {
-  final mutex = SimpleMutex('user-data-${userId}');
+   final mutex = SimpleMutex('user-data-${userId}');
 
-  try {
-    await mutex.lock();
+   try {
+      await mutex.lock();
 
-    try {
-      // Process user data
-      await fetchAndProcessUserData(userId);
-    } catch (e) {
-      // Handle processing errors
-      print('Error processing user data: $e');
-      await logError('user-data-processing', e, userId);
+      try {
+         // Process user data
+         await fetchAndProcessUserData(userId);
+      } catch (e) {
+         // Handle processing errors
+         print('Error processing user data: $e');
+         await logError('user-data-processing', e, userId);
 
-      // Attempt recovery
-      if (e is NetworkTimeoutException) {
-        await retryWithBackoff(() => fetchAndProcessUserData(userId));
-      } else if (e is ValidationException) {
-        await notifyUserOfValidationIssue(userId, e);
-      } else {
-        // Unrecoverable error
-        await markUserForManualReview(userId);
+         // Attempt recovery
+         if (e is NetworkTimeoutException) {
+            await retryWithBackoff(() => fetchAndProcessUserData(userId));
+         } else if (e is ValidationException) {
+            await notifyUserOfValidationIssue(userId, e);
+         } else {
+            // Unrecoverable error
+            await markUserForManualReview(userId);
+         }
+      } finally {
+         // Always release the mutex
+         mutex.unlock();
       }
-    } finally {
-      // Always release the mutex
-      mutex.unlock();
-    }
-  } catch (e) {
-    // Handle lock acquisition errors
-    print('Could not acquire user data lock: $e');
-    await scheduleRetry(() => processUserData(userId));
-  }
+   } catch (e) {
+      // Handle lock acquisition errors
+      print('Could not acquire user data lock: $e');
+      await scheduleRetry(() => processUserData(userId));
+   }
 }
 ```
 
@@ -1235,48 +1235,48 @@ Comprehensive monitoring helps identify bottlenecks and performance issues:
 import 'package:mutex_library/mutex_monitor.dart';
 
 void configureMutexMonitoring() {
-  final monitor = MutexMonitor();
+   final monitor = MutexMonitor();
 
-  // Configure monitoring
-  monitor.configure(
-      logLockAcquisitions: true,
-      logLockReleases: true,
-      logTimeouts: true,
-      logHighContentionEvents: true,
-      contentionThreshold: 5,
-      samplingRatePercent: 10,
-      detailedLogging: true
-  );
+   // Configure monitoring
+   monitor.configure(
+           logLockAcquisitions: true,
+           logLockReleases: true,
+           logTimeouts: true,
+           logHighContentionEvents: true,
+           contentionThreshold: 5,
+           samplingRatePercent: 10,
+           detailedLogging: true
+   );
 
-  // Register callbacks
-  monitor.onHighContention((mutex, queueLength, waitTime) {
-    print('HIGH CONTENTION: ${mutex.name}, queue: $queueLength, wait: ${waitTime}ms');
-    logAnalyticsEvent('mutex_high_contention', {
-      'mutex_name': mutex.name,
-      'queue_length': queueLength,
-      'wait_time_ms': waitTime
-    });
-  });
+   // Register callbacks
+   monitor.onHighContention((mutex, queueLength, waitTime) {
+      print('HIGH CONTENTION: ${mutex.name}, queue: $queueLength, wait: ${waitTime}ms');
+      logAnalyticsEvent('mutex_high_contention', {
+         'mutex_name': mutex.name,
+         'queue_length': queueLength,
+         'wait_time_ms': waitTime
+      });
+   });
 
-  monitor.onDeadlockDetected((mutexes) {
-    print('DEADLOCK DETECTED: ${mutexes.map((m) => m.name).join(', ')}');
-    logAnalyticsEvent('mutex_deadlock_detected', {
-      'mutex_names': mutexes.map((m) => m.name).join(', ')
-    });
-    sendAlertToDevTeam('Deadlock detected in production');
-  });
+   monitor.onDeadlockDetected((mutexes) {
+      print('DEADLOCK DETECTED: ${mutexes.map((m) => m.name).join(', ')}');
+      logAnalyticsEvent('mutex_deadlock_detected', {
+         'mutex_names': mutexes.map((m) => m.name).join(', ')
+      });
+      sendAlertToDevTeam('Deadlock detected in production');
+   });
 
-  // Start monitoring
-  monitor.start();
+   // Start monitoring
+   monitor.start();
 }
 
 // Mock analytics methods
 void logAnalyticsEvent(String eventName, Map<String, dynamic> properties) {
-  print('Analytics event: $eventName, properties: $properties');
+   print('Analytics event: $eventName, properties: $properties');
 }
 
 void sendAlertToDevTeam(String message) {
-  print('ALERT: $message');
+   print('ALERT: $message');
 }
 ```
 
@@ -1293,6 +1293,169 @@ Key takeaways:
 5. Best practices like consistent naming conventions, proper error handling, and comprehensive monitoring help maintain application reliability.
 
 By following the patterns and examples provided in this documentation, you can effectively manage concurrency in your Dart and Flutter applications, leading to more robust and reliable software.
+
+
+## StorageEngineBloc Documentation
+
+---
+
+### 🔹 Load All Items
+
+To fetch all stored items under a specific tag.
+```dart
+storageEngineBloc.add(LoadItems<T>(
+  tag: 'storage_key',
+  fromJson: (json) => T.fromJson(json),
+));
+```
+
+---
+
+### 🔹 Load a Single Item
+
+To fetch a specific item using its ID.
+
+```dart
+storageEngineBloc.add(LoadItem<T>(
+  tag: 'storage_key',
+  id: 'item_id',
+  fromJson: (json) => T.fromJson(json),
+));
+```
+---
+
+### 🔹 Save an Item
+To store or update an item in storage.
+
+
+```dart
+storageEngineBloc.add(SaveItem<T>(
+  tag: 'storage_key',
+  item: myItem,
+));
+```
+
+---
+
+### 🔹 Save Multiple Items
+To store or update a list of items at once.
+
+#### How?
+```dart
+storageEngineBloc.add(SaveItems<T>(
+  tag: 'storage_key',
+  items: myItemsList,
+));
+```
+
+---
+
+### 🔹 Delete a Single Item
+
+To remove an item using its ID.
+
+```dart
+storageEngineBloc.add(DeleteItem(
+  tag: 'storage_key',
+  id: 'item_id',
+));
+```
+---
+
+### 🔹 Delete Multiple Items
+To remove multiple items by their IDs.
+
+```dart
+storageEngineBloc.add(DeleteItems(
+  tag: 'storage_key',
+  ids: ['id1', 'id2'],
+));
+```
+---
+
+### 🔹 Delete Items Based on Condition
+To remove items that match a specific condition.
+
+```dart
+storageEngineBloc.add(DeleteWhere<T>(
+  tag: 'storage_key',
+  fromJson: (json) => T.fromJson(json),
+  condition: (item) => item.property == value,
+));
+```
+---
+
+### 🔹 Watch Items
+To stream real-time updates for a list of items.
+```dart
+storageEngineBloc.add(WatchItems<T>(
+  tag: 'storage_key',
+  fromJson: (json) => T.fromJson(json),
+));
+```
+
+---
+
+### 🔹 Watch a Single Item
+To stream real-time updates for a specific item.
+
+```dart
+storageEngineBloc.add(WatchItem<T>(
+  tag: 'storage_key',
+  id: 'item_id',
+  fromJson: (json) => T.fromJson(json),
+));
+```
+
+---
+
+### 🔹 Query Items
+To fetch items that match a specific filter condition.
+
+```dart
+storageEngineBloc.add(QueryItems<T>(
+  tag: 'storage_key',
+  fromJson: (json) => T.fromJson(json),
+  filter: (item) => item.property == value,
+));
+```
+---
+
+### 🔹 Clear All Data
+To remove all stored data under a specific tag.
+
+```dart
+storageEngineBloc.add(ClearStorage(
+  tag: 'storage_key',
+));
+```
+---
+
+### 🔹  Store Raw Data
+To save raw (unstructured) data.
+
+```dart
+storageEngineBloc.add(SetRawData(
+  tag: 'storage_key',
+  data: myRawData,
+));
+```
+---
+
+### 🔹 Get Raw Data
+
+To retrieve raw (unstructured) data.
+
+```dart
+storageEngineBloc.add(GetRawData(
+  tag: 'storage_key',
+));
+```
+---
+
+This documentation provides a clear and structured guide for using `StorageEngineBloc<T>`. Let me know if you'd like additional features or refinements!
+
+
 
 ## API Reference
 
