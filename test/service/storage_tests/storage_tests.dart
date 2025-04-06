@@ -1,3 +1,5 @@
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -14,13 +16,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'model/comment.dart';
 import 'storage_tests.mocks.dart';
 
-// Creating a mock of LocalStorageEngine for testing
 @GenerateMocks(<Type>[LocalStorageEngine])
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  SharedPreferences.setMockInitialValues(
-    <String, Object>{},
-  ); // Set empty initial values
+  SharedPreferences.setMockInitialValues(<String, Object>{});
   group('StorageEngineBloc Tests', () {
     late StorageEngineBloc<Comment> storageBloc;
     late MockLocalStorageEngine mockEngine;
@@ -39,7 +38,7 @@ void main() {
 
     setUp(() {
       mockEngine = MockLocalStorageEngine();
-      storageBloc = StorageEngineBloc<Comment>();
+      storageBloc = StorageEngineBloc<Comment>(engine: mockEngine);
     });
 
     tearDown(() async {
@@ -51,21 +50,20 @@ void main() {
     });
 
     blocTest<StorageEngineBloc<Comment>, StorageState>(
-      'LoadItems event should emit [StorageLoading, ItemsLoaded] when '
-      'successful',
+      'LoadItems event should emit [StorageLoading, ItemsLoaded]'
+      ' when successful',
       build: () {
         when(
-          unawaited(mockEngine.getAllItems<Comment>(testTag, Comment.fromJson)),
-        ).thenAnswer((_) async {
-          await Future<dynamic>.delayed(const Duration(milliseconds: 10));
-        });
+          mockEngine.getAllItems<Comment>(testTag, Comment.fromJson),
+        ).thenAnswer((_) async => <Comment>[testComment]);
+
         return storageBloc;
       },
       act:
           (final StorageEngineBloc<StorableModel> bloc) => bloc.add(
             LoadItems<Comment>(tag: testTag, fromJson: Comment.fromJson),
           ),
-      wait: const Duration(milliseconds: 50), // Allow time for the state change
+      wait: const Duration(milliseconds: 50),
       expect:
           () => <TypeMatcher<StorageState>>[
             isA<StorageLoading>(),
@@ -78,7 +76,7 @@ void main() {
       ' exception occurs',
       build: () {
         when(
-          unawaited(mockEngine.getAllItems<Comment>(any, any)),
+          mockEngine.getAllItems<Comment>(any, any),
         ).thenThrow(Exception('Test error'));
         return storageBloc;
       },
@@ -101,25 +99,24 @@ void main() {
       'LoadItem event should emit [StorageLoading, ItemLoaded] when successful',
       build: () {
         when(
-          unawaited(
-            mockEngine.getItem<Comment>(
-              testTag,
-              testComment.id,
-              Comment.fromJson,
-            ),
+          mockEngine.getItem<Comment>(
+            testTag,
+            testComment.id,
+            Comment.fromJson,
           ),
         ).thenAnswer((_) async => testComment);
 
-        return storageBloc;
+        return StorageEngineBloc<Comment>(engine: mockEngine);
       },
-      act:
-          (final StorageEngineBloc<Comment> bloc) => bloc.add(
-            LoadItem<Comment>(
-              tag: testTag,
-              id: testComment.id,
-              fromJson: Comment.fromJson,
-            ),
+      act: (final StorageEngineBloc<Comment> bloc) {
+        bloc.add(
+          LoadItem<Comment>(
+            tag: testTag,
+            id: testComment.id,
+            fromJson: Comment.fromJson,
           ),
+        );
+      },
       expect:
           () => <TypeMatcher<StorageState>>[
             isA<StorageLoading>(),
@@ -258,7 +255,7 @@ void main() {
       'when successful',
       build: () {
         when(
-          unawaited(mockEngine.queryItems(testTag, Comment.fromJson, any)),
+          mockEngine.queryItems(testTag, Comment.fromJson, any),
         ).thenAnswer((_) async => <Comment>[testComments[0]]);
         return storageBloc;
       },
@@ -360,33 +357,40 @@ void main() {
 
     test('WatchItems should set up a subscription and emit updates', () async {
       final StreamController<List<Comment>> controller =
-          StreamController<List<Comment>>();
+          StreamController<List<Comment>>.broadcast();
       when(
         mockEngine.watchItems(testTag, Comment.fromJson),
       ).thenAnswer((_) async => controller.stream);
+
+      final Future<void> expectation = expectLater(
+        storageBloc.stream,
+        emitsInOrder(<TypeMatcher<ItemsLoaded<Comment>>>[
+          isA<ItemsLoaded<Comment>>(),
+        ]),
+      );
 
       storageBloc.add(
         WatchItems<Comment>(tag: testTag, fromJson: Comment.fromJson),
       );
 
-      // Wait for event to be processed
-      await Future<dynamic>.delayed(const Duration(milliseconds: 100));
+      await Future<dynamic>.delayed(const Duration(milliseconds: 20));
 
-      // Simulate data update
       controller.add(testComments);
 
-      // Wait for state to be updated
-      await Future<dynamic>.delayed(const Duration(milliseconds: 100));
+      await expectation;
 
       expect(storageBloc.state, isA<ItemsLoaded<Comment>>());
+      final ItemsLoaded<Comment> loadedState =
+          storageBloc.state as ItemsLoaded<Comment>;
+      expect(loadedState.items, equals(testComments));
 
-      // Clean up
       await controller.close();
     });
 
-    test('WatchItem should set up a subscription and emit updates', () async {
+    test('WatchItem emits updates using internal event', () async {
       final StreamController<Comment?> controller =
           StreamController<Comment?>();
+
       when(
         mockEngine.watchItem(testTag, testComment.id, Comment.fromJson),
       ).thenAnswer((_) async => controller.stream);
@@ -399,23 +403,18 @@ void main() {
         ),
       );
 
-      // Wait for event to be processed
-      await Future<dynamic>.delayed(const Duration(milliseconds: 100));
-
-      // Simulate data update
       controller.add(testComment);
 
-      // Wait for state to be updated
-      await Future<dynamic>.delayed(const Duration(milliseconds: 100));
+      await expectLater(
+        storageBloc.stream,
+        emitsThrough(isA<ItemLoaded<Comment>>()),
+      );
 
-      expect(storageBloc.state, isA<ItemLoaded<Comment>>());
-
-      // Clean up
       await controller.close();
+      await storageBloc.close();
     });
 
     test('should close all subscriptions when bloc is closed', () async {
-      // Setup a stream controller and subscription
       final StreamController<List<Comment>> controller =
           StreamController<List<Comment>>();
       when(
@@ -426,16 +425,12 @@ void main() {
         WatchItems<Comment>(tag: testTag, fromJson: Comment.fromJson),
       );
 
-      // Wait for event to be processed
       await Future<dynamic>.delayed(const Duration(milliseconds: 100));
 
-      // Close the bloc
       await storageBloc.close();
 
-      // Verify all subscriptions are closed (should not cause any errors)
-      controller.add(testComments); // Should not affect closed bloc
+      controller.add(testComments);
 
-      // Clean up
       await controller.close();
     });
   });

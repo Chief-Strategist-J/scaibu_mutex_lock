@@ -206,7 +206,7 @@ class SetRawData extends StorageEvent {
   ///
   /// - Requires [tag] to identify the storage location.
   /// - Accepts [data] as the value to store.
-  SetRawData({required this.tag,required this.data});
+  SetRawData({required this.tag, required this.data});
 
   /// Storage key for the location where the raw data will be stored.
   final String tag;
@@ -383,4 +383,38 @@ class WatchRawData extends StorageEvent {
   /// Parameters:
   /// - [tag]: A unique identifier for the storage collection.
   final String tag;
+}
+
+/// {@template item_updated}
+/// Internal event used by the  to notify that an item of type [T]
+/// has been updated or loaded from the stream.
+///
+/// This event is dispatched internally from a stream listener and
+/// should not be triggered manually from outside the bloc.
+///
+/// The [item] can be `null` if the item doesn't exist or was deleted.
+/// {@endtemplate}
+class ItemUpdated<T> extends StorageEvent {
+  /// Creates an [ItemUpdated] event containing the updated or loaded item.
+  ItemUpdated(this.item);
+
+  /// The updated or fetched item.
+  final T? item;
+}
+
+/// {@template storage_errored}
+/// Internal event used by the  to propagate stream-related errors
+/// in a safe way after the original event handler has completed.
+///
+/// This avoids calling `emit` from outside the original `on<Event>` callback,
+/// which can lead to assertion failures in BLoC.
+///
+/// The [message] typically describes the error source.
+/// {@endtemplate}
+class StorageErrored extends StorageEvent {
+  /// Creates a [StorageErrored] event with the given error [message].
+  StorageErrored(this.message);
+
+  /// Description of the error that occurred.
+  final String message;
 }

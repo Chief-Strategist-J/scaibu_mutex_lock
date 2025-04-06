@@ -29,3 +29,8 @@
 ### Fixed
 - Addressed potential memory leaks by ensuring all stream subscriptions are properly canceled and cleared.
 
+## [1.0.8] - 2025-04-06
+### Fixed
+- Ensured correct cancellation and cleanup of stream subscriptions in `WatchItem<T>` event to prevent memory leaks and duplicate listeners.
+- Added conditional checks to avoid BLoC method calls (`add(...)`) after closure, preventing potential runtime exceptions.
+- Improved internal `_subscriptions` map management by consistently removing canceled entries.

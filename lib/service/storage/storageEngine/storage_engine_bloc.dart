@@ -10,7 +10,29 @@ import 'package:scaibu_mutex_lock/service/storage/storage_engine.dart';
 class StorageEngineBloc<T extends StorableModel>
     extends Bloc<StorageEvent, StorageState> {
   /// Bloc for managing data operations
-  StorageEngineBloc() : super(StorageInitial()) {
+  StorageEngineBloc({final LocalStorageEngine? engine})
+    : _engine = engine ?? LocalStorageEngine(),
+      super(StorageInitial()) {
+    /// Handles [ItemUpdated] events by emitting a [ItemLoaded] state
+    /// with the updated item. This event is typically dispatched internally
+    /// from a stream listener to propagate new data to the UI.
+    on<ItemUpdated<T>>((
+      final ItemUpdated<T> event,
+      final Emitter<StorageState> emit,
+    ) {
+      emit(ItemLoaded<T>(event.item));
+    });
+
+    /// Handles [StorageErrored] events by emitting a [StorageError] state
+    /// with the provided error message. This is used to report errors that
+    /// occur outside the main `on<Event>` lifecycle, such as inside streams.
+    on<StorageErrored>((
+      final StorageErrored event,
+      final Emitter<StorageState> emit,
+    ) {
+      emit(StorageError(event.message));
+    });
+
     /// Handles the LoadItems event for fetching a list of stored items.
     on<LoadItems<T>>((
       final LoadItems<T> event,
@@ -44,7 +66,7 @@ class StorageEngineBloc<T extends StorableModel>
       try {
         /// Retrieve the stored item using tag, ID, and deserialization method
         ///
-        final T? item = await _engine.getItem(
+        final T? item = await _engine.getItem<T>(
           event.tag,
           event.id,
           event.fromJson,
@@ -65,7 +87,7 @@ class StorageEngineBloc<T extends StorableModel>
     ) async {
       try {
         /// Store the provided item in storage under the specified tag
-        await _engine.setItem(event.tag, event.item);
+        await _engine.setItem<T>(event.tag, event.item);
 
         /// Emit a success state indicating the item was saved
         emit(StorageActionCompleted('Item saved successfully'));
@@ -82,7 +104,7 @@ class StorageEngineBloc<T extends StorableModel>
     ) async {
       try {
         /// Store the provided list of items in storage under the specified tag
-        await _engine.setItems(event.tag, event.items);
+        await _engine.setItems<T>(event.tag, event.items);
 
         /// Emit a success state indicating the items were saved
         emit(StorageActionCompleted('Items saved successfully'));
@@ -134,7 +156,11 @@ class StorageEngineBloc<T extends StorableModel>
     ) async {
       try {
         /// Remove items that satisfy a given condition in the storage
-        await _engine.removeWhere(event.tag, event.fromJson, event.condition);
+        await _engine.removeWhere<T>(
+          event.tag,
+          event.fromJson,
+          event.condition,
+        );
 
         /// Emit a success state indicating the filtered items were deleted
         emit(StorageActionCompleted('Items deleted successfully'));
@@ -150,48 +176,75 @@ class StorageEngineBloc<T extends StorableModel>
       final WatchItems<T> event,
       final Emitter<StorageState> emit,
     ) async {
-      /// Generate a unique subscription key for tracking the stream
       final String subKey = 'watch_items_${event.tag}';
 
-      /// Cancel any existing subscription before creating a new one
+      /// Cancel existing stream subscription if any
       await _subscriptions[subKey]?.cancel();
 
-      /// Listen for updates to the list of items in storage
-      final Stream<List<T>> stream = await _engine.watchItems(
+      /// Get stream
+      final Stream<List<T>> stream = await _engine.watchItems<T>(
         event.tag,
         event.fromJson,
       );
 
-      /// Store the subscription and emit new data whenever updates occur
-      _subscriptions[subKey] = stream.listen((final List<T> items) {
-        emit(ItemsLoaded<T>(items));
-      });
+      /// Use emit.forEach to safely emit states as stream updates
+      /// Do not store emit.forEach — it returns void
+      _subscriptions.remove(subKey); // Remove the old key before
+      /// starting new watch
+      await emit.forEach<List<T>>(
+        stream,
+        onData: ItemsLoaded<T>.new,
+        onError:
+            (final Object error, final StackTrace stackTrace) =>
+                StorageError('Failed to load items: $error'),
+      );
     });
 
-    /// Handles the WatchItem event for streaming real-time updates of
-    /// a specific item.
+    /// Event handler for WatchItem<T> events
     on<WatchItem<T>>((
       final WatchItem<T> event,
       final Emitter<StorageState> emit,
     ) async {
-      /// Generate a unique subscription key for tracking the
-      /// stream of a specific item
+      // Construct a unique key for this item watcher based on tag and id
       final String subKey = 'watch_item_${event.tag}_${event.id}';
 
-      /// Cancel any existing subscription before creating a new one
+      /// Cancel and remove any existing stream subscription for this item
       await _subscriptions[subKey]?.cancel();
+      _subscriptions.remove(subKey);
 
-      /// Listen for updates to the specific item in storage
-      final Stream<T?> stream = await _engine.watchItem(
-        event.tag,
-        event.id,
-        event.fromJson,
-      );
+      try {
+        /// Watch the item using the engine and obtain a stream of T?
+        final Stream<T?> stream = await _engine.watchItem<T>(
+          event.tag,
+          event.id,
+          event.fromJson,
+        );
 
-      /// Store the subscription and emit new data whenever updates occur
-      _subscriptions[subKey] = stream.listen((final T? item) {
-        emit(ItemLoaded<T>(item));
-      });
+        /// Listen to the stream and respond to changes
+        final StreamSubscription<T?> subscription = stream.listen(
+          (final T? data) {
+            /// If BLoC is not closed, emit ItemUpdated event with the new data
+            if (!isClosed) {
+              add(ItemUpdated<T>(data));
+            }
+          },
+          onError: (final Object error) {
+            /// On stream error, emit StorageErrored event with the
+            /// error message
+            if (!isClosed) {
+              add(StorageErrored('Stream error: $error'));
+            }
+          },
+        );
+
+        /// Save the new subscription in the map for later cancellation
+        _subscriptions[subKey] = subscription;
+      } catch (e) {
+        /// If stream setup fails, emit StorageErrored with the error message
+        if (!isClosed) {
+          add(StorageErrored('Stream setup failed: $e'));
+        }
+      }
     });
 
     /// Handles the WatchFilteredItems event for streaming real-time updates
@@ -207,7 +260,7 @@ class StorageEngineBloc<T extends StorableModel>
       await _subscriptions[subKey]?.cancel();
 
       /// Await the stream that provides updates for filtered items in storage
-      final Stream<List<T>> stream = await _engine.watchFilteredItems(
+      final Stream<List<T>> stream = await _engine.watchFilteredItems<T>(
         event.tag,
         event.fromJson,
         event.filter,
@@ -230,7 +283,7 @@ class StorageEngineBloc<T extends StorableModel>
       try {
         /// Retrieve items from storage based on tag, deserialization
         /// method, and filter criteria
-        final List<T> items = await _engine.queryItems(
+        final List<T> items = await _engine.queryItems<T>(
           event.tag,
           event.fromJson,
           event.filter,
@@ -326,7 +379,7 @@ class StorageEngineBloc<T extends StorableModel>
   /// storage operations.
   /// This provides methods for saving, retrieving, querying,
   /// and watching stored data.
-  final LocalStorageEngine _engine = LocalStorageEngine();
+  final LocalStorageEngine _engine;
 
   /// A map to keep track of active subscriptions to data streams.
   /// The keys represent unique subscription identifiers
@@ -343,11 +396,11 @@ class StorageEngineBloc<T extends StorableModel>
   /// This ensures that all active stream subscriptions are canceled
   /// to prevent memory leaks and unexpected behaviors.
   @override
-  Future<void> close() {
+  Future<void> close() async {
     /// Iterate over all active subscriptions and cancel each one.
     for (final StreamSubscription<dynamic> subscription
         in _subscriptions.values) {
-      subscription.cancel();
+      await subscription.cancel();
     }
 
     /// Clear the subscription map to free up memory.
