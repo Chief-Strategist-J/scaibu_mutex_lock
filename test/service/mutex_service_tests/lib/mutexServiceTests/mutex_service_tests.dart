@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:scaibu_mutex_lock/scaibu_mutex_lock.dart';
 import 'package:test/test.dart';
+
 /// mutex service test
 class MockMutex extends IMutex {
   /// mutex service test
@@ -168,8 +169,8 @@ void mutexServiceTest() {
         List<Future<void>>.generate(100, (_) async {
               await mutex.lock();
               mutex.unlock();
-            }) as Iterable<Future<void>>
-            ,
+            })
+            as Iterable<Future<void>>,
       );
 
       final Map<String, dynamic> metrics = mutexService.getMetrics();
