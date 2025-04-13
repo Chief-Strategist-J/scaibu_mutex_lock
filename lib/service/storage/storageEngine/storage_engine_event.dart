@@ -316,7 +316,11 @@ class WatchItem<T extends StorableModel> extends StorageEvent {
 
 class WatchFilteredItems<T extends StorableModel> extends StorageEvent {
   /// Constructs a [WatchFilteredItems] event.
-  WatchFilteredItems(this.tag, this.fromJson, this.filter);
+  WatchFilteredItems({
+    required this.tag,
+    required this.fromJson,
+    required this.filter,
+  });
 
   /// Parameters:
   /// - [tag]: A unique identifier for the storage collection.
@@ -378,7 +382,7 @@ class ClearStorage extends StorageEvent {
 
 class WatchRawData extends StorageEvent {
   /// Constructs a [WatchRawData] event.
-  WatchRawData(this.tag);
+  WatchRawData({required this.tag});
 
   /// Parameters:
   /// - [tag]: A unique identifier for the storage collection.
