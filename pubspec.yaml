@@ -21,6 +21,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.0
+  http: ^1.4.0
   mockito: ^5.4.5
   shared_preferences: ^2.5.3
   uuid: ^4.5.1
