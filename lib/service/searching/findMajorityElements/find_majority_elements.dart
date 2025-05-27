@@ -3,6 +3,7 @@ import 'package:test/test.dart';
 /// Returns a list of elements that appear more than n/2 times in the list.
 /// For a single majority element, returns a list with one element.
 /// If no such element exists, returns an empty list.
+///
 List<T> findMajorityElements<T>(final List<T> list) {
   final Map<T, int> counts = <T, int>{};
   final int threshold = list.length ~/ 2;
