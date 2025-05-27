@@ -247,29 +247,28 @@ class StorageEngineBloc<T extends StorableModel>
       }
     });
 
-    /// Handles the WatchFilteredItems event for streaming real-time updates
-    /// of items that match a specific filter condition.
     on<WatchFilteredItems<T>>((
       final WatchFilteredItems<T> event,
       final Emitter<StorageState> emit,
     ) async {
-      /// Generate a unique subscription key for tracking the filtered stream
       final String subKey = 'watch_filtered_${event.tag}';
 
-      /// Cancel any existing subscription before creating a new one
       await _subscriptions[subKey]?.cancel();
 
-      /// Await the stream that provides updates for filtered items in storage
       final Stream<List<T>> stream = await _engine.watchFilteredItems<T>(
         event.tag,
         event.fromJson,
         event.filter,
       );
 
-      /// Store the subscription and emit new data whenever updates occur
-      _subscriptions[subKey] = stream.listen((final List<T> items) {
-        emit(ItemsLoaded<T>(items));
-      });
+      // Remove direct stream.listen usage, and use emit.forEach
+      await emit.forEach<List<T>>(
+        stream,
+        onData: ItemsLoaded<T>.new,
+        onError:
+            (final Object error, final StackTrace stackTrace) =>
+                StorageError(error.toString()),
+      );
     });
 
     /// Handles the QueryItems event for fetching items from storage
@@ -359,19 +358,19 @@ class StorageEngineBloc<T extends StorableModel>
       final WatchRawData event,
       final Emitter<StorageState> emit,
     ) async {
-      /// Generate a unique subscription key for tracking the raw data stream
       final String subKey = 'watch_raw_${event.tag}';
 
-      /// Cancel any existing subscription before creating a new one
       await _subscriptions[subKey]?.cancel();
 
-      /// Await the stream that provides updates for raw data in storage
       final Stream<dynamic> stream = await _engine.watchRawData(event.tag);
 
-      /// Store the subscription and emit new data whenever updates occur
-      _subscriptions[subKey] = stream.listen((final dynamic data) {
-        emit(RawDataLoaded(data));
-      });
+      await emit.forEach<dynamic>(
+        stream,
+        onData: RawDataLoaded.new,
+        onError:
+            (final Object error, final StackTrace stackTrace) =>
+                StorageError(error.toString()),
+      );
     });
   }
 

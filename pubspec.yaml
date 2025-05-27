@@ -21,8 +21,10 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.0
+  http: ^1.4.0
   mockito: ^5.4.5
   shared_preferences: ^2.5.3
+  test: ^1.25.15
   uuid: ^4.5.1
 
 
@@ -31,7 +33,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  test: ^1.25.15
   build_runner: ^2.4.15
 
 flutter:
