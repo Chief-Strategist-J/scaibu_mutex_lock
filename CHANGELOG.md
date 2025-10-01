@@ -34,3 +34,54 @@
 - Ensured correct cancellation and cleanup of stream subscriptions in `WatchItem<T>` event to prevent memory leaks and duplicate listeners.
 - Added conditional checks to avoid BLoC method calls (`add(...)`) after closure, preventing potential runtime exceptions.
 - Improved internal `_subscriptions` map management by consistently removing canceled entries.
+
+## [1.0.10] - 2025-10-01
+### Added
+- **Searching utilities** under `lib/service/searching/`
+  - `find_all_duplicates.dart`
+  - `find_all_peak_elements.dart`
+  - `find_any_peak_element.dart`
+  - `find_elements_repeated_exactly_k_times.dart`
+  - `find_element_with_max_frequency.dart`
+  - `find_first_duplicate_by_index.dart`
+  - `find_kth_largest.dart`
+  - `find_k_th_smallest.dart`
+  - `find_largest_in_rotated_sorted_array.dart`
+  - `find_majority_elements.dart`
+  - `find_minimum_in_rotated_sorted_array.dart`
+  - `find_missing_element.dart`
+  - `find_single_unique.dart`
+  - `find_smallest_element.dart`
+  - `find_unique_among_repeats.dart`
+  - `has_duplicates.dart`
+  - `find_largest_element.dart`
+
+- **Storage layer enhancements**
+  - Added `app_storage.dart` for generic storage handling.
+  - Introduced `storage_engine.dart` with BLoC pattern support.
+  - Added `storageEngine/` sub-module with:
+    - `storage_engine_bloc.dart`
+    - `storage_engine_event.dart`
+    - `storage_engine_state.dart`
+
+- **TreeCraft repository**
+  - Introduced `tree_repository/` for tree-based data structures.
+  - Added `tree_mappable.dart` under `model/`.
+  - Added `generic_tree_node.dart` under `service/`.
+
+### Changed
+- Reorganized `lib/` structure:
+  - Core mutex handling in `core/mutex_service.dart`
+  - Lock implementations moved to `src/lock/`
+  - Mutex implementations moved to `src/mutex/`
+  - Async utilities under `src/stream/`
+  - Shared resources under `src/utils/`
+- Ensured `scaibu_mutex_lock.dart` acts as a clean public API entrypoint.
+
+### Deprecated
+- `lib/main.dart` kept temporarily for compatibility but scheduled for removal.
+- `lib/example/lib/main.dart` (will be migrated to top-level `example/` folder in future release).
+
+### Fixed
+- Improved internal naming consistency (`transaction_mutex.dart` instead of `mutex_transaction.dart`).
+- Resolved deep nesting in earlier `treeCraft` and `mutexLock` directories.
