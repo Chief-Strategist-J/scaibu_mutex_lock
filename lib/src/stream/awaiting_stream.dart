@@ -1,4 +1,4 @@
-part of '../scaibu_mutex_lock.dart';
+part of '../../scaibu_mutex_lock.dart';
 
 /// Extension providing high-performance stream collection
 extension HighScalableStreamUtils<T> on Stream<T> {

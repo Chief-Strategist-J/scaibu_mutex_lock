@@ -5,12 +5,12 @@ import 'dart:isolate';
 
 import 'package:collection/collection.dart';
 
-part 'package:scaibu_mutex_lock/service/mutexLock/core/mutex_service.dart';
-part 'service/atomic_lock.dart';
-part 'service/awaiting_stream.dart';
-part 'service/mutexLock/circuit_breaker_mutex.dart';
-part 'service/mutexLock/composed_lock.dart';
-part 'service/mutexLock/mutex_transaction.dart';
-part 'service/mutexLock/priority_mutex.dart';
-part 'service/mutexLock/read_write_lock.dart';
-part 'service/mutexLock/resource_pool.dart';
+part 'package:scaibu_mutex_lock/core/mutex_service.dart';
+part 'src/lock/atomic_lock.dart';
+part 'src/stream/awaiting_stream.dart';
+part 'src/mutex/circuit_breaker_mutex.dart';
+part 'src/lock/composed_lock.dart';
+part 'src/mutex/transaction_mutex.dart';
+part 'src/mutex/priority_mutex.dart';
+part 'src/lock/read_write_lock.dart';
+part 'src/utils/resource_pool.dart';
